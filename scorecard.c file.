@@ -1,0 +1,161 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define NUM_CANDIDATES 6
+#define NUM_CATEGORIES 5
+#define SCORE_SHEET_SIZE 7
+
+// Candidate information
+char *candidate_names[NUM_CANDIDATES] = {
+    "Jiyeon Park", "Ethan Smith", "Helena Silva",
+    "Liam Wilson", "Soojin Lee", "Carlos Diaz"
+};
+
+int candidate_ids[NUM_CANDIDATES] = {
+    123456, 234567, 345678, 456789, 567890, 678901
+};
+
+// Scoring sheet: 1D array for each candidate [ID, 5 scores..., Total]
+int scoring_sheet[NUM_CANDIDATES][SCORE_SHEET_SIZE];
+
+// Get score input with validation
+int get_valid_score(const char *category) {
+    int score;
+    while (1) {
+        printf("%s (10-100): ", category);
+        scanf("%d", &score);
+        if (score >= 10 && score <= 100) return score;
+        printf("Invalid score. Please enter a value between 10 and 100.\n");
+    }
+}
+
+// Input judge and candidate scores
+void input_scores() {
+    char judge_name[50], expertise[50];
+    printf("####################################\n");
+    printf("#     Audition Evaluation Entry    #\n");
+    printf("####################################\n");
+
+    printf("> Judge Name: ");
+    scanf(" %[^\n]", judge_name);
+    printf("> Expertise: ");
+    scanf(" %[^\n]", expertise);
+
+    printf("++++++++++++++++++++++++++++++++++++\n");
+
+    for (int i = 0; i < NUM_CANDIDATES; i++) {
+        int total = 0;
+        printf("Candidate: %s\n", candidate_names[i]);
+        scoring_sheet[i][0] = candidate_ids[i]; // Set ID
+        scoring_sheet[i][1] = get_valid_score("  Music Proficiency");
+        scoring_sheet[i][2] = get_valid_score("  Dance");
+        scoring_sheet[i][3] = get_valid_score("  Vocal");
+        scoring_sheet[i][4] = get_valid_score("  Visual");
+        scoring_sheet[i][5] = get_valid_score("  Expression");
+
+        for (int j = 1; j <= NUM_CATEGORIES; j++) {
+            total += scoring_sheet[i][j];
+        }
+        scoring_sheet[i][6] = total;
+        printf("------------------------------------\n");
+    }
+}
+
+// Review scores before submission
+void review_scores() {
+    printf("++++++++++++++++++++++++++++++++++++\n");
+    printf("Submission completed.\n");
+    printf("Please review your input!\n");
+    printf("------------------------------------\n");
+
+    for (int i = 0; i < NUM_CANDIDATES; i++) {
+        printf("%s: %d\n", candidate_names[i], scoring_sheet[i][6]);
+    }
+}
+
+// Modify scores for a candidate
+void modify_scores() {
+    while (1) {
+        char name[50];
+        int id, found = 0;
+
+        printf("Enter candidate name to modify (or type 'done' to finish): ");
+        scanf(" %[^\n]", name);
+        if (strcmp(name, "done") == 0) break;
+
+        printf("Enter candidate's 6-digit ID: ");
+        scanf("%d", &id);
+
+        for (int i = 0; i < NUM_CANDIDATES; i++) {
+            if (strcmp(name, candidate_names[i]) == 0 && candidate_ids[i] == id) {
+                printf("Modifying scores for %s\n", name);
+                int total = 0;
+                scoring_sheet[i][1] = get_valid_score("  Music Proficiency");
+                scoring_sheet[i][2] = get_valid_score("  Dance");
+                scoring_sheet[i][3] = get_valid_score("  Vocal");
+                scoring_sheet[i][4] = get_valid_score("  Visual");
+                scoring_sheet[i][5] = get_valid_score("  Expression");
+
+                for (int j = 1; j <= NUM_CATEGORIES; j++)
+                    total += scoring_sheet[i][j];
+
+                scoring_sheet[i][6] = total;
+                found = 1;
+                break;
+            }
+        }
+
+        if (!found)
+            printf("No matching candidate found. Please try again.\n");
+    }
+}
+
+// Sort candidates by total score (descending)
+void sort_and_display_finalists() {
+    int indices[NUM_CANDIDATES];
+    for (int i = 0; i < NUM_CANDIDATES; i++) indices[i] = i;
+
+    // Simple bubble sort by total score
+    for (int i = 0; i < NUM_CANDIDATES - 1; i++) {
+        for (int j = 0; j < NUM_CANDIDATES - i - 1; j++) {
+            if (scoring_sheet[indices[j]][6] < scoring_sheet[indices[j + 1]][6]) {
+                int temp = indices[j];
+                indices[j] = indices[j + 1];
+                indices[j + 1] = temp;
+            }
+        }
+    }
+
+    printf("=======================================\n");
+    printf("Compiling final selection results...\n");
+    printf("=======================================\n");
+
+    printf("###########################################\n");
+    printf("# Congratulations! Welcome to Milliways!  #\n");
+    printf("###########################################\n");
+    for (int i = 0; i < 4; i++) {
+        printf("%d. %s\n", i + 1, candidate_names[indices[i]]);
+    }
+}
+
+int main() {
+    while (1) {
+        input_scores();
+        review_scores();
+
+        char confirm;
+        printf("Would you like to submit? (Y/N): ");
+        scanf(" %c", &confirm);
+
+        if (confirm == 'Y' || confirm == 'y') {
+            printf("***Final submission completed.***\n");
+            sort_and_display_finalists();
+            break;
+        } else {
+            modify_scores();
+        }
+    }
+
+    return 0;
+}
