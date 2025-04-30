@@ -1,0 +1,137 @@
+
+
+#include <stdio.h>
+
+#define NUM_CANDIDATES 3
+#define NUM_MESSAGES 5
+
+// Immutable memorial data (unsuccessful candidates) – name, audition, email
+const char memorial01_arr[NUM_CANDIDATES][100] = {
+    "Jiyeon Park,milliways,jiyeon@example.com",
+    "Ethan Smith,milliways,ethan@example.com",
+    "Helena Silva,milliways,helena@example.com"
+};
+
+// Rolling paper messages array
+char rollingpp01[NUM_MESSAGES][100]; // max 5 messages
+
+// Candidate names extracted for matching
+char candidate_names[NUM_CANDIDATES][30] = {
+    "Jiyeon Park",
+    "Ethan Smith",
+    "Helena Silva"
+};
+
+// Function to display all unsuccessful candidates
+void show_failed_candidates() {
+    printf("Unsuccessful Candidates:\n");
+    for (int i = 0; i < NUM_CANDIDATES; i++) {
+        printf("%d. %s\n", i + 1, candidate_names[i]);
+    }
+}
+
+// Function to add a message to a candidate
+void add_message() {
+    int recipient_index;
+    char sender[30];
+    char message[70];
+
+    show_failed_candidates();
+
+    printf("Select a candidate by number (1-%d): ", NUM_CANDIDATES);
+    scanf("%d", &recipient_index);
+    getchar(); // consume newline
+
+    if (recipient_index < 1 || recipient_index > NUM_CANDIDATES) {
+        printf("Invalid candidate.\n");
+        return;
+    }
+
+    printf("Your Name: ");
+    fgets(sender, sizeof(sender), stdin);
+
+    printf("Message: ");
+    fgets(message, sizeof(message), stdin);
+
+    // Format: "[name]: [message]"
+    int slot = -1;
+    for (int i = 0; i < NUM_MESSAGES; i++) {
+        if (rollingpp01[i][0] == '\0') {
+            slot = i;
+            break;
+        }
+    }
+
+    if (slot != -1) {
+        snprintf(rollingpp01[slot], sizeof(rollingpp01[slot]), "%s: %s", sender, message);
+        printf("Message saved successfully.\n");
+    } else {
+        printf("Message list is full.\n");
+    }
+}
+
+// Function to view messages for a specific candidate
+void view_messages() {
+    int choice;
+    show_failed_candidates();
+    printf("View messages for which candidate? (1-%d): ", NUM_CANDIDATES);
+    scanf("%d", &choice);
+    getchar(); // consume newline
+
+    if (choice < 1 || choice > NUM_CANDIDATES) {
+        printf("Invalid choice.\n");
+        return;
+    }
+
+    printf("Messages for %s:\n", candidate_names[choice - 1]);
+    int found = 0;
+    for (int i = 0; i < NUM_MESSAGES; i++) {
+        if (rollingpp01[i][0] != '\0') {
+            printf("- %s", rollingpp01[i]); // includes newline from fgets
+            found = 1;
+        }
+    }
+    if (!found) {
+        printf("No messages found.\n");
+    }
+
+    char send;
+    printf("Would you like to send this email? (Y/N): ");
+    scanf(" %c", &send);
+    if (send == 'Y') {
+        printf("Email has been sent to %s.\n", memorial01_arr[choice - 1]);
+    } else {
+        printf("Email not sent.\n");
+    }
+}
+
+int main() {
+    // Initialize message array
+    for (int i = 0; i < NUM_MESSAGES; i++) {
+        rollingpp01[i][0] = '\0';
+    }
+
+    int option;
+    while (1) {
+        printf("\n========== Rolling Paper Menu ==========\n");
+        printf("1. Send a message\n");
+        printf("2. View messages\n");
+        printf("3. Exit\n");
+        printf("Select an option: ");
+        scanf("%d", &option);
+        getchar(); // consume newline
+
+        if (option == 1) {
+            add_message();
+        } else if (option == 2) {
+            view_messages();
+        } else if (option == 3) {
+            printf("Exiting program.\n");
+            break;
+        } else {
+            printf("Invalid option.\n");
+        }
+    }
+
+    return 0;
+}
