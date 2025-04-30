@@ -1,0 +1,110 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_JUDGES 100
+#define BUFFER_SIZE 512
+#define REQUIRED_FIELDS 7
+
+char judges_array[MAX_JUDGES][BUFFER_SIZE];
+
+// Helper function to count commas in the judge info (simple validation)
+int count_commas(const char *str) {
+    int count = 0;
+    while (*str) {
+        if (*str == ',') count++;
+        str++;
+    }
+    return count;
+}
+
+// Helper function to trim leading spaces
+char* trim(char *str) {
+    while (*str == ' ') str++;
+    return str;
+}
+
+// Display parsed judge data
+void display_judges(char project[], int total_judges) {
+    int i;
+    printf("####################################\n");
+    printf("#        Display Judge Data        #\n");
+    printf("####################################\n");
+
+    for (i = 0; i < total_judges; i++) {
+        printf("[Judge %d]\n", i + 1);
+
+        char copy[BUFFER_SIZE];
+        strcpy(copy, judges_array[i]);
+
+        char *token = strtok(copy, ",");
+        while (token != NULL) {
+            printf("%s\n", trim(token));
+            token = strtok(NULL, ",");
+        }
+
+        printf("-----------------------------------\n");
+    }
+}
+
+int main() {
+    char project[100];
+    int total_judges;
+    int selected_members;
+
+    printf("####################################\n");
+    printf("#      Judge List Data Entry       #\n");
+    printf("####################################\n");
+    printf("Participating Project: ");
+    fgets(project, sizeof(project), stdin);
+    project[strcspn(project, "\n")] = '\0';  // remove newline
+
+    printf("Total Number of Judges: ");
+    scanf("%d", &total_judges);
+    getchar(); // clear newline
+
+    if (total_judges > MAX_JUDGES) {
+        printf("Too many judges. Max allowed is %d.\n", MAX_JUDGES);
+        return 1;
+    }
+
+    printf("Number of Selected Members: ");
+    scanf("%d", &selected_members);
+    getchar(); // clear newline
+
+    printf("++++++++++++++++++++++++++++++++++++\n");
+    printf("Starting to input information for %d judges.\n", total_judges);
+    printf("++++++++++++++++++++++++++++++++++++\n");
+
+    int i = 0;
+    while (i < total_judges) {
+        printf("Judge %d: ", i + 1);
+        fgets(judges_array[i], BUFFER_SIZE, stdin);
+        judges_array[i][strcspn(judges_array[i], "\n")] = '\0'; // remove newline
+
+        if (count_commas(judges_array[i]) != REQUIRED_FIELDS - 1) {
+            printf("The input items are incorrect. Please enter them again.\n");
+            continue;
+        }
+
+        i++;
+    }
+
+    printf("++++++++++++++++++++++++++++++++++++\n");
+    printf("Judge information entry is complete.\n");
+    printf("++++++++++++++++++++++++++++++++++++\n");
+
+    char view_choice;
+    printf("\"Should we check the judge information?\" (Y/N): ");
+    scanf(" %c", &view_choice);
+
+    if (view_choice == 'Y') {
+        printf("[%s] Should we check the judge information? Y\n", project);
+        display_judges(project, total_judges);
+    } else {
+        printf("Program terminated.\n");
+    }
+
+    return 0;
+}
+
