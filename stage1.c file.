@@ -1,0 +1,162 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_STAGE 8
+
+// Stage status: 'N' = Not started, 'P' = Passed, 'F' = Failed
+char stageStatus[MAX_STAGE] = {'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'};
+
+// Function declarations
+void mainMenu();
+void auditionManagement();
+void trainingMenu();
+void debut();
+void handleTrainingStage(int stage);
+int canAccessStage(int stage);
+int allStagesPassed();
+
+int main() {
+    mainMenu();
+    return 0;
+}
+
+void mainMenu() {
+    char input[10];
+    while (1) {
+        printf("\n== Main Menu ==\n");
+        printf("1. Audition Management\n");
+        printf("2. Training\n");
+        printf("3. Debut\n");
+        printf("Q. Quit\n");
+        printf("Select an option: ");
+        fgets(input, sizeof(input), stdin);
+
+        if (input[0] == '0' || input[0] == 'q' || input[0] == 'Q' || input[0] == '\n') {
+            printf("Exiting the program...\n");
+            break;
+        }
+
+        switch (input[0]) {
+            case '1':
+                auditionManagement();
+                break;
+            case '2':
+                trainingMenu();
+                break;
+            case '3':
+                debut();
+                break;
+            default:
+                printf("Invalid input. Try again.\n");
+        }
+    }
+}
+
+void auditionManagement() {
+    printf("\n== Audition Management ==\n");
+    printf("This feature is currently under development.\n");
+}
+
+void trainingMenu() {
+    char input[10];
+    while (1) {
+        printf("\n== Training Menu ==\n");
+        for (int i = 0; i < MAX_STAGE; i++) {
+            printf("%d. Stage %d - ", i + 1, i + 1);
+            switch (i) {
+                case 0:
+                    printf("Physical Strength & Knowledge");
+                    break;
+                case 1:
+                    printf("Self-Management & Teamwork");
+                    break;
+                case 2:
+                    printf("Language & Pronunciation");
+                    break;
+                case 3:
+                    printf("Vocal");
+                    break;
+                case 4:
+                    printf("Dance");
+                    break;
+                case 5:
+                    printf("Visual & Image");
+                    break;
+                case 6:
+                    printf("Acting & Stage Performance");
+                    break;
+                case 7:
+                    printf("Fan Communication");
+                    break;
+            }
+            printf(" (%c)\n", stageStatus[i]);
+        }
+        printf("0. Return to Main Menu\n");
+        printf("Select a training stage: ");
+        fgets(input, sizeof(input), stdin);
+
+        if (input[0] == '0' || input[0] == '\n') {
+            printf("Returning to main menu...\n");
+            break;
+        }
+
+        int stage = input[0] - '1';
+        if (stage >= 0 && stage < MAX_STAGE) {
+            if (canAccessStage(stage)) {
+                if (stageStatus[stage] == 'P') {
+                    printf("Stage %d already passed. Cannot re-select.\n", stage + 1);
+                } else {
+                    handleTrainingStage(stage);
+                }
+            } else {
+                printf("Stage %d is not accessible yet. Complete required previous stages first.\n", stage + 1);
+            }
+        } else {
+            printf("Invalid input. Please select a valid stage.\n");
+        }
+    }
+}
+
+int canAccessStage(int stage) {
+    if (stage == 0) return 1; // Always accessible
+    if (stage == 1 && stageStatus[0] == 'P') return 1;
+    if (stage >= 2 && stageStatus[0] == 'P' && stageStatus[1] == 'P') return 1;
+    return 0;
+}
+
+void handleTrainingStage(int stage) {
+    char choice[10];
+    printf("Would you like to enter the evaluation result? (Y/N): ");
+    fgets(choice, sizeof(choice), stdin);
+
+    if (choice[0] == 'Y' || choice[0] == 'y') {
+        printf("Did you complete the training and pass the certification? (Y/N): ");
+        fgets(choice, sizeof(choice), stdin);
+        if (choice[0] == 'Y' || choice[0] == 'y') {
+            stageStatus[stage] = 'P';
+            printf("Stage %d marked as Passed.\n", stage + 1);
+        } else {
+            stageStatus[stage] = 'F';
+            printf("Stage %d marked as Failed.\n", stage + 1);
+        }
+    } else {
+        printf("Returning to training menu...\n");
+    }
+}
+
+void debut() {
+    printf("\n== Debut Check ==\n");
+    if (allStagesPassed()) {
+        printf("🎉 Congratulations! You are eligible to debut!\n");
+    } else {
+        printf("You must pass all training stages before debuting.\n");
+    }
+}
+
+int allStagesPassed() {
+    for (int i = 0; i < MAX_STAGE; i++) {
+        if (stageStatus[i] != 'P') return 0;
+    }
+    return 1;
+}
