@@ -1,0 +1,148 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+struct EasterEgg {
+    char keyword[8]; // "specter" + null terminator
+    char message[512];
+};
+
+struct EasterEgg arthur_egg = {
+    "specter",
+    "I confess. After graduating from university, I was blinded by the arrogance of starting a startup and recklessly blocked my friends' paths. I painfully learned that when I am the only one convinced by my idea, it leads to disastrous results. The past Arthur was a ghost of dogmatism and stubbornness."
+};
+
+// Convert character to 8-bit binary string
+void char_to_binary(char c, char *bin) {
+    for (int i = 7; i >= 0; i--) {
+        bin[7 - i] = (c & (1 << i)) ? '1' : '0';
+    }
+    bin[8] = '\0';
+}
+
+// Display reversed binary values of keyword
+void display_reversed_binary(const char *keyword) {
+    char binary[9];
+    for (int i = 6; i >= 0; i--) {
+        char_to_binary(keyword[i], binary);
+        printf("%s\n", binary);
+    }
+}
+
+// Get and validate input characters for each reversed binary
+int isRightChar(const char *keyword) {
+    char input[8];
+    for (int i = 6; i >= 0; i--) {
+        printf("Enter character for reversed binary %d: ", 6 - i + 1);
+        fgets(input, sizeof(input), stdin);
+        if (input[0] != keyword[i]) {
+            printf("Incorrect. Try again.\n");
+            i++; // retry current character
+        }
+    }
+    return 1;
+}
+
+// Final keyword comparison
+int isEasterEgg(const char *input, const char *keyword) {
+    return strcmp(input, keyword) == 0;
+}
+
+// Easter Egg logic
+void find_easter_egg() {
+    printf("<<Arthur's Easter Egg>>\n");
+    display_reversed_binary(arthur_egg.keyword);
+
+    if (isRightChar(arthur_egg.keyword)) {
+        char final_input[16];
+        printf("Now enter the complete word: ");
+        fgets(final_input, sizeof(final_input), stdin);
+        final_input[strcspn(final_input, "\n")] = '\0'; // Remove newline
+
+        if (isEasterEgg(final_input, arthur_egg.keyword)) {
+            printf("##Easter Egg Discovered!$$\n");
+            printf("%s\n", arthur_egg.message);
+        } else {
+            printf("Incorrect keyword. Returning to menu.\n");
+        }
+    }
+}
+
+// Bonus: scramble and binary convert keyword
+void bonus_scramble_and_binary(const char *keyword) {
+    char shuffled[8];
+    int len = strlen(keyword);
+    int index = 0;
+
+    // Odd-indexed first
+    for (int i = 1; i < len; i += 2) {
+        shuffled[index++] = keyword[i];
+    }
+
+    // Even-indexed next
+    for (int i = 0; i < len; i += 2) {
+        shuffled[index++] = keyword[i];
+    }
+    shuffled[len] = '\0';
+
+    printf("Bonus Shuffle Result: %s\n", shuffled);
+
+    for (int i = len - 1; i >= 0; i--) {
+        char binary[9];
+        char_to_binary(shuffled[i], binary);
+        printf("%s\n", binary);
+    }
+}
+
+// Menu for Self-Management and Teamwork
+void self_management_teamwork_menu() {
+    char input[32];
+    printf("Enter your name: ");
+    fgets(input, sizeof(input), stdin);
+    input[strcspn(input, "\n")] = '\0'; // Remove newline
+
+    if (strcmp(input, "Arthur") == 0) {
+        find_easter_egg();
+    } else {
+        printf("Welcome, %s. Continue training...\n", input);
+    }
+}
+
+// Stage 2 main menu
+void stage2_menu() {
+    int choice;
+    do {
+        printf("\n[II. Training - Stage 2]\n");
+        printf("1. Basic Stamina\n");
+        printf("2. Self-Management and Teamwork\n");
+        printf("3. Exit Stage 2\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        getchar(); // consume newline
+
+        switch (choice) {
+            case 1:
+                printf("Basic Stamina training begins...\n");
+                break;
+            case 2:
+                self_management_teamwork_menu();
+                break;
+            case 3:
+                printf("Exiting Stage 2...\n");
+                break;
+            default:
+                printf("Invalid choice. Try again.\n");
+        }
+    } while (choice != 3);
+}
+
+// Main program entry
+int main() {
+    stage2_menu();
+
+    // Optional: call bonus function for testing
+    // bonus_scramble_and_binary(arthur_egg.keyword);
+
+    return 0;
+}
