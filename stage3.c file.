@@ -1,0 +1,76 @@
+Required Problem 0401: How is my Korean proficiency?
+Area	CS	Category	C Language(ENG)
+Problem Description	Introduction	
+Background Summary
+Among the Millieways members, there is only one Korean. The remaining three members now need to train to use Korean as if it were their native language. Arthur thought it would be ideal if the only Korean member could take on the role of helping the other three learn Korean.
+
+Fortunately, the other three had been studying Korean on and off for quite some time while preparing for auditions, so they seemed somewhat prepared. However, it was necessary to assess their level of understanding of the language.
+
+Arthur asked Wonchul to implement a quiz function to quickly check their comprehension of Korean.
+
+Implementation Task
+Implement a data structure for the quiz function that measures Korean language comprehension.
+Implement a Korean question bank struct that stores Korean language question-answer data.
+
+Initialize with 10 English questions and their 10 corresponding Korean answers.
+Struct members: Question ID, Question Content, Correct Answer.
+questions.txt
+Implement the Millieways trainee struct.
+
+Initialize with Millieways' final trainee data from Assignment 1.
+Struct members: Trainee name and nickname, Nationality, Quiz score, Pass status.
+A score of 80 or higher is required to pass.
+Implement the quiz answer struct.
+
+Struct members: Question ID, Correctness (O/X).
+Implement the function testKoreanLang(), which is executed when selecting [II. Training > 3. Language and Pronunciation Training > A. Korean Quiz].
+
+Implement the function selectRandomTakers() to randomly select a trainee for the quiz using the Hour data.
+
+Example output: “Welcome, {Park Ji-yeon}, to the Korean quiz session!”
+Trainees with Korean nationality cannot take the test.
+Implement the function serveRandomQuiz() to randomly select 5 questions from the Korean question bank struct.
+
+Display a message 30 seconds before the quiz starts, then begin after 30 seconds.
+Questions must not repeat.
+Each question is worth 20 points.
+Unanswered or incorrect answers receive 0 points.
+Call isAnswer() each time an answer is submitted to check correctness.
+After answering all questions:
+Store the total score and pass status in the trainee struct.
+Display the answer sheet, total score, and pass status.
+Implement the function isAnswer() to check and record answer correctness.
+
+Accept question ID and answer content as parameters.
+Store the result in the quiz answer struct.
+(Bonus) Optimize the solution to ensure isAnswer() is only called once per question.
+
+Development Environment	
+Development Environment
+Use a cross-platform development tool.
+The C language syntax used in this process follows the ANSI C standard.x
+Use gcc 9.x, a C compiler that complies with the ANSI C standard.
+Use only the C standard library.
+Follow the ANSI C standard coding style.
+Writing C (GNU Coding Standards)
+https://www.gnu.org/prep/standards/html_node/Writing-C.html
+Constraints	
+Constraints
+The code is written in the stage3.c file.
+Expand the menu system from Problem 1 of Course 2.
+Use the Millieways member information presented in Course 1.
+Use pointers for variables, arrays, and structures.
+Bonus Evaluation Guide
+Check whether the solution has been improved to call the isAnswer() function only once.
+
+Verify that isAnswer() is called after all quiz questions have been answered.
+Ensure that after updating the quiz answer struct, the total score and pass status are updated in the trainee struct.
+Test case	
+N/A
+
+Map	Prerequisites		Levels	
+Recommendation Process		Levels	
+Acquisition cometency	Competency name		Competency scores	
+Data files	questions.txt
+Datafile Description	구조체 멤버: 문제 ID, 문제 내용, 정답
+Unit Questions PDF File
