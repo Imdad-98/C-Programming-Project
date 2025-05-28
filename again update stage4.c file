@@ -1,0 +1,125 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <ctype.h>
+
+#define MAX_CHORDS 10
+
+typedef struct {
+    char note;
+    int octave;
+} Note;
+
+typedef struct {
+    Note root;
+    Note third;
+    Note fifth;
+} Chord;
+
+int isValidNote(char note) {
+    return note >= 'A' && note <= 'G';
+}
+
+int isValidOctave(int octave) {
+    return octave >= 1 && octave <= 8;
+}
+
+int areNotesUnique(Note a, Note b, Note c) {
+    return a.note != b.note && a.note != c.note && b.note != c.note;
+}
+
+int isSameOctave(Note a, Note b, Note c) {
+    return a.octave == b.octave && a.octave == c.octave;
+}
+
+int noteToInt(char note) {
+    return note - 'A';
+}
+
+const char* evaluateHarmony(Note root, Note third, Note fifth) {
+    int interval13 = abs(noteToInt(root.note) - noteToInt(third.note));
+    int interval15 = abs(noteToInt(root.note) - noteToInt(fifth.note));
+
+    if (interval13 <= 2 && interval15 >= 3) {
+        return "Chord is harmonious.";
+    } else {
+        return "Chord is not harmonious.";
+    }
+}
+
+void printChord(Chord *chord) {
+    printf("Chord Notes: %c%d, %c%d, %c%d\n",
+        chord->root.note, chord->root.octave,
+        chord->third.note, chord->third.octave,
+        chord->fifth.note, chord->fifth.octave);
+}
+
+void learnMusicTheory() {
+    Chord chord;
+    printf("=== Music Theory Class ===\n");
+
+    printf("Enter root note (A-G): ");
+    scanf(" %c", &chord.root.note);
+    printf("Enter root octave (1-8): ");
+    scanf("%d", &chord.root.octave);
+
+    printf("Enter third note (A-G): ");
+    scanf(" %c", &chord.third.note);
+    printf("Enter third octave (1-8): ");
+    scanf("%d", &chord.third.octave);
+
+    printf("Enter fifth note (A-G): ");
+    scanf(" %c", &chord.fifth.note);
+    printf("Enter fifth octave (1-8): ");
+    scanf("%d", &chord.fifth.octave);
+
+    if (!isValidNote(chord.root.note) || !isValidNote(chord.third.note) || !isValidNote(chord.fifth.note)) {
+        printf("Error: Notes must be between A and G.\n");
+        return;
+    }
+    if (!isValidOctave(chord.root.octave) || !isValidOctave(chord.third.octave) || !isValidOctave(chord.fifth.octave)) {
+        printf("Error: Octaves must be between 1 and 8.\n");
+        return;
+    }
+
+    printChord(&chord);
+
+    if (!areNotesUnique(chord.root, chord.third, chord.fifth)) {
+        printf("Invalid chord: Duplicate notes detected.\n");
+        return;
+    }
+
+    if (!isSameOctave(chord.root, chord.third, chord.fifth)) {
+        printf("Invalid chord: Notes are not in the same octave.\n");
+        return;
+    }
+
+    printf("Chord is valid.\n");
+    printf("%s\n", evaluateHarmony(chord.root, chord.third, chord.fifth));
+}
+
+// Example main menu integration
+int main() {
+    int choice;
+    do {
+        printf("\n--- Magrathea Training Menu ---\n");
+        printf("1. Music Theory\n");
+        printf("0. Exit\n");
+        printf("Select: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                learnMusicTheory();
+                break;
+            case 0:
+                printf("Exiting.\n");
+                break;
+            default:
+                printf("Invalid choice.\n");
+        }
+    } while (choice != 0);
+
+    return 0;
+}
