@@ -1,0 +1,176 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_NAME 30
+#define MAX_FEEDBACK 51
+#define MAX_MIDI 12
+#define MAX_TRAINEES 10
+
+typedef struct {
+    char name[MAX_NAME];
+    int vocalRange;
+    int midiCount;
+    int midiValues[MAX_MIDI];
+    float vocalStability;
+    char feedback[MAX_FEEDBACK];
+} VocalTrainee;
+
+VocalTrainee trainees[MAX_TRAINEES];
+int traineeCount = 0;
+
+// Helper to check if a MIDI value is unique
+int isUnique(int arr[], int size, int val) {
+    for (int i = 0; i < size; i++) {
+        if (arr[i] == val) return 0;
+    }
+    return 1;
+}
+
+// Generate unique random MIDI values
+void generateMidiValues(VocalTrainee *t) {
+    int count = t->midiCount;
+    int range = t->vocalRange;
+
+    int i = 0;
+    while (i < count) {
+        int val = rand() % (range + 1);
+        if (isUnique(t->midiValues, i, val)) {
+            t->midiValues[i++] = val;
+        }
+    }
+}
+
+// Function pointer type for calculating stability
+typedef void (*StabilityCalcFn)(VocalTrainee*);
+
+// Calculate vocal stability
+void calculateStability(VocalTrainee *t) {
+    int sum = 0;
+    for (int i = 1; i < t->midiCount; i++) {
+        int diff = t->midiValues[i] - t->midiValues[i - 1];
+        sum += (diff < 0) ? -diff : diff;
+    }
+    t->vocalStability = (float)sum / (t->midiCount - 1);
+}
+
+// Prompt feedback
+void provideFeedback(VocalTrainee *t) {
+    printf("Enter feedback (max 50 chars): ");
+    getchar();  // clear newline
+    fgets(t->feedback, MAX_FEEDBACK, stdin);
+    t->feedback[strcspn(t->feedback, "\n")] = '\0';  // remove newline
+}
+
+// Input vocal range and MIDI count
+void measure(VocalTrainee *t, StabilityCalcFn calc) {
+    printf("Enter vocal range (0–127): ");
+    scanf("%d", &t->vocalRange);
+
+    while (t->vocalRange < 0 || t->vocalRange > 127) {
+        printf("Invalid range. Enter 0–127: ");
+        scanf("%d", &t->vocalRange);
+    }
+
+    printf("Enter number of MIDI values (6–12): ");
+    scanf("%d", &t->midiCount);
+
+    while (t->midiCount < 6 || t->midiCount > 12 || t->midiCount > t->vocalRange + 1) {
+        printf("Invalid. Must be 6–12 and ≤ vocal range. Enter again: ");
+        scanf("%d", &t->midiCount);
+    }
+
+    generateMidiValues(t);
+    calc(t);  // function pointer for calculation
+    provideFeedback(t);
+}
+
+// Evaluate a trainee
+void evalVocal() {
+    if (traineeCount >= MAX_TRAINEES) {
+        printf("Maximum trainees evaluated.\n");
+        return;
+    }
+
+    VocalTrainee vt;
+
+    printf("Enter trainee name: ");
+    getchar(); // flush
+    fgets(vt.name, MAX_NAME, stdin);
+    vt.name[strcspn(vt.name, "\n")] = '\0';
+
+    measure(&vt, calculateStability);
+
+    trainees[traineeCount++] = vt;
+
+    printf("Evaluation complete for %s.\n", vt.name);
+}
+
+// Selection Sort by vocal stability (low to high)
+void sortTraineesByStability() {
+    for (int i = 0; i < traineeCount - 1; i++) {
+        int min = i;
+        for (int j = i + 1; j < traineeCount; j++) {
+            if (trainees[j].vocalStability < trainees[min].vocalStability) {
+                min = j;
+            }
+        }
+        if (min != i) {
+            VocalTrainee tmp = trainees[i];
+            trainees[i] = trainees[min];
+            trainees[min] = tmp;
+        }
+    }
+}
+
+// Display all evaluations
+void printVocalInfo() {
+    if (traineeCount == 0) {
+        printf("No evaluations to display.\n");
+        return;
+    }
+
+    sortTraineesByStability();
+
+    printf("\n--- Vocal Evaluation Summary ---\n");
+    for (int i = 0; i < traineeCount; i++) {
+        printf("Name: %s\n", trainees[i].name);
+        printf("Vocal Stability: %.2f\n", trainees[i].vocalStability);
+        printf("Feedback: %s\n\n", trainees[i].feedback);
+    }
+}
+
+// Menu interface
+void vocalMenu() {
+    int option;
+    do {
+        printf("\n[4. Vocal Training > A. Vocal Evaluation]\n");
+        printf("1. Evaluate Trainee\n");
+        printf("2. Show Evaluation Results\n");
+        printf("0. Exit\n");
+        printf("Choose option: ");
+        scanf("%d", &option);
+
+        switch (option) {
+            case 1:
+                evalVocal();
+                break;
+            case 2:
+                printVocalInfo();
+                break;
+            case 0:
+                printf("Exiting vocal evaluation.\n");
+                break;
+            default:
+                printf("Invalid choice.\n");
+        }
+
+    } while (option != 0);
+}
+
+int main() {
+    srand((unsigned int)time(NULL));
+    vocalMenu();
+    return 0;
+}
