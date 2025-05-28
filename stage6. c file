@@ -1,0 +1,263 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_TITLE 100
+#define MAX_DATE 11
+#define MAX_FIELD 50
+#define MAX_QUALIFICATIONS 5
+#define MAX_SOCIAL 5
+
+// Job advertisement structure
+typedef struct {
+    int id;
+    char title[MAX_TITLE];
+    char postingDate[MAX_DATE];
+    char deadline[MAX_DATE];
+    int numberOfHires;
+    char field[MAX_FIELD];
+    char **qualifications;
+    int qualificationCount;
+} JobAd;
+
+// Social network structure
+typedef struct {
+    char name[20];
+    char apiKey[50];
+    char apiURL[100];
+} SocialNetwork;
+
+// Global variables
+JobAd *jobAds = NULL;
+int jobCount = 0;
+int nextId = 1;
+
+SocialNetwork socialNetworks[MAX_SOCIAL] = {
+    {"Facebook", "FB-API-123", "https://api.facebook.com/post"},
+    {"Instagram", "IG-API-456", "https://api.instagram.com/post"},
+    {"Thread", "TH-API-789", "https://api.thread.com/post"},
+    {"LinkedIn", "LI-API-321", "https://api.linkedin.com/post"},
+    {"X", "X-API-654", "https://api.x.com/post"}
+};
+
+// Function declarations
+void findSpecialist();
+void createJobAd();
+void viewJobAds();
+void viewExpiredJobAds();
+void postToSocial();
+int compareDates(const char *current, const char *deadline);
+void freeJobAds();
+void clearInputBuffer();
+
+// Main entry
+int main() {
+    findSpecialist();
+    freeJobAds();
+    return 0;
+}
+
+// Menu function
+void findSpecialist() {
+    int choice;
+    while (1) {
+        printf("\n[II. Training > 6. Visual & Image Training > A. Finding People]\n");
+        printf("1. Create Job Posting\n");
+        printf("2. View Job Postings\n");
+        printf("3. Post on Social Networks\n");
+        printf("4. View Expired Job Postings (Bonus)\n");
+        printf("5. Exit\n");
+        printf("Select an option: ");
+        scanf("%d", &choice);
+        clearInputBuffer();
+
+        switch (choice) {
+            case 1: createJobAd(); break;
+            case 2: viewJobAds(); break;
+            case 3: postToSocial(); break;
+            case 4: viewExpiredJobAds(); break;
+            case 5: return;
+            default: printf("Invalid option.\n");
+        }
+    }
+}
+
+// Create job advertisement
+void createJobAd() {
+    JobAd newAd;
+    newAd.id = nextId++;
+
+    printf("Enter job title: ");
+    fgets(newAd.title, MAX_TITLE, stdin);
+    newAd.title[strcspn(newAd.title, "\n")] = '\0';
+
+    printf("Enter posting date (YYYY-MM-DD): ");
+    fgets(newAd.postingDate, MAX_DATE, stdin);
+    newAd.postingDate[strcspn(newAd.postingDate, "\n")] = '\0';
+
+    printf("Enter deadline date (YYYY-MM-DD): ");
+    fgets(newAd.deadline, MAX_DATE, stdin);
+    newAd.deadline[strcspn(newAd.deadline, "\n")] = '\0';
+
+    printf("Enter number of hires: ");
+    scanf("%d", &newAd.numberOfHires);
+    clearInputBuffer();
+
+    printf("Enter job field: ");
+    fgets(newAd.field, MAX_FIELD, stdin);
+    newAd.field[strcspn(newAd.field, "\n")] = '\0';
+
+    printf("Enter number of qualifications (1-%d): ", MAX_QUALIFICATIONS);
+    scanf("%d", &newAd.qualificationCount);
+    clearInputBuffer();
+
+    if (newAd.qualificationCount <= 0 || newAd.qualificationCount > MAX_QUALIFICATIONS) {
+        printf("Invalid number of qualifications.\n");
+        return;
+    }
+
+    newAd.qualifications = (char **)malloc(sizeof(char *) * newAd.qualificationCount);
+    for (int i = 0; i < newAd.qualificationCount; ++i) {
+        newAd.qualifications[i] = (char *)malloc(100);
+        printf("Enter qualification %d: ", i + 1);
+        fgets(newAd.qualifications[i], 100, stdin);
+        newAd.qualifications[i][strcspn(newAd.qualifications[i], "\n")] = '\0';
+    }
+
+    jobAds = realloc(jobAds, sizeof(JobAd) * (jobCount + 1));
+    jobAds[jobCount++] = newAd;
+
+    printf("✅ Job posting created successfully!\n");
+}
+
+// View active job ads
+void viewJobAds() {
+    if (jobCount == 0) {
+        printf("No job postings available. Please create one.\n");
+        createJobAd();
+        return;
+    }
+
+    char currentDate[MAX_DATE];
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    sprintf(currentDate, "%04d-%02d-%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+
+    printf("\n[Active Job Ads]\n");
+    int found = 0;
+    for (int i = 0; i < jobCount; ++i) {
+        if (compareDates(currentDate, jobAds[i].deadline) <= 0) {
+            printf("ID: %d | Title: %s\n", jobAds[i].id, jobAds[i].title);
+            found = 1;
+        }
+    }
+
+    if (!found) {
+        printf("No active job postings available.\n");
+        return;
+    }
+
+    int id;
+    printf("Enter job ID to view details (0 to cancel): ");
+    scanf("%d", &id);
+    clearInputBuffer();
+
+    for (int i = 0; i < jobCount; ++i) {
+        if (jobAds[i].id == id) {
+            printf("\n--- Job Details ---\n");
+            printf("Title: %s\nPosting Date: %s\nDeadline: %s\nHires: %d\nField: %s\n",
+                   jobAds[i].title, jobAds[i].postingDate, jobAds[i].deadline,
+                   jobAds[i].numberOfHires, jobAds[i].field);
+            printf("Qualifications:\n");
+            for (int j = 0; j < jobAds[i].qualificationCount; ++j) {
+                printf(" - %s\n", jobAds[i].qualifications[j]);
+            }
+            return;
+        }
+    }
+
+    if (id != 0)
+        printf("Invalid job ID.\n");
+}
+
+// View expired job ads (Bonus)
+void viewExpiredJobAds() {
+    char currentDate[MAX_DATE];
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    sprintf(currentDate, "%04d-%02d-%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+
+    printf("\n[Expired Job Ads]\n");
+    int found = 0;
+    for (int i = 0; i < jobCount; ++i) {
+        if (compareDates(currentDate, jobAds[i].deadline) > 0) {
+            printf("ID: %d | Title: %s | Deadline: %s\n", jobAds[i].id, jobAds[i].title, jobAds[i].deadline);
+            found = 1;
+        }
+    }
+
+    if (!found) {
+        printf("No expired job ads.\n");
+    }
+}
+
+// Stub social network posting
+void postToSocial() {
+    if (jobCount == 0) {
+        printf("No job postings to share.\n");
+        return;
+    }
+
+    printf("\nSelect a social network:\n");
+    for (int i = 0; i < MAX_SOCIAL; ++i) {
+        printf("%d. %s\n", i + 1, socialNetworks[i].name);
+    }
+
+    int snChoice;
+    scanf("%d", &snChoice);
+    clearInputBuffer();
+
+    if (snChoice < 1 || snChoice > MAX_SOCIAL) {
+        printf("Invalid choice.\n");
+        return;
+    }
+
+    printf("Enter job ID to post: ");
+    int id;
+    scanf("%d", &id);
+    clearInputBuffer();
+
+    for (int i = 0; i < jobCount; ++i) {
+        if (jobAds[i].id == id) {
+            printf("\nPosting job '%s' to %s...\n", jobAds[i].title, socialNetworks[snChoice - 1].name);
+            printf("API KEY: %s\nURL: %s\n", socialNetworks[snChoice - 1].apiKey, socialNetworks[snChoice - 1].apiURL);
+            printf("✅ Post successful! (stubbed)\n");
+            return;
+        }
+    }
+
+    printf("❌ Job ID not found.\n");
+}
+
+// Date comparison: return -1, 0, 1
+int compareDates(const char *current, const char *deadline) {
+    return strcmp(current, deadline);
+}
+
+// Memory cleanup
+void freeJobAds() {
+    for (int i = 0; i < jobCount; ++i) {
+        for (int j = 0; j < jobAds[i].qualificationCount; ++j) {
+            free(jobAds[i].qualifications[j]);
+        }
+        free(jobAds[i].qualifications);
+    }
+    free(jobAds);
+}
+
+// Clear leftover input
+void clearInputBuffer() {
+    int ch;
+    while ((ch = getchar()) != '\n' && ch != EOF);
+}
