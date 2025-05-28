@@ -1,0 +1,185 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_MEMBERS 10
+#define MAX_DANCES 6
+#define MAX_STEPS 10
+#define STEP_LEN 20
+#define NAME_LEN 50
+
+typedef struct {
+    char name[NAME_LEN];
+    char steps[MAX_STEPS][STEP_LEN];
+    int stepCount;
+} Dance;
+
+typedef struct {
+    char name[NAME_LEN];
+    char nickname[NAME_LEN];
+    int score;
+} Member;
+
+Dance dances[MAX_DANCES];
+Member members[MAX_MEMBERS] = {
+    {"Ariel", "ari", 0}, {"Zeke", "zeke", 0},
+    {"Hye-kyung", "hk", 0}, {"Arthur", "arth", 0}
+};
+int memberCount = 4;
+
+void shuffle(char arr[][STEP_LEN], int n) {
+    for (int i = n - 1; i > 0; --i) {
+        int j = rand() % (i + 1);
+        char temp[STEP_LEN];
+        strcpy(temp, arr[i]);
+        strcpy(arr[i], arr[j]);
+        strcpy(arr[j], temp);
+    }
+}
+
+int readDanceSteps(const char *filename) {
+    FILE *fp = fopen(filename, "r");
+    if (!fp) {
+        printf("Failed to open %s\n", filename);
+        return 0;
+    }
+
+    char line[256];
+    int count = 0;
+
+    while (fgets(line, sizeof(line), fp) && count < MAX_DANCES) {
+        char *token = strtok(line, ":");
+        if (!token) continue;
+
+        strcpy(dances[count].name, token);
+        dances[count].stepCount = 0;
+
+        token = strtok(NULL, ",\n");
+        while (token && dances[count].stepCount < MAX_STEPS) {
+            strcpy(dances[count].steps[dances[count].stepCount++], token);
+            token = strtok(NULL, ",\n");
+        }
+        count++;
+    }
+
+    fclose(fp);
+    return count;
+}
+
+Member* findMemberByNickname(char *nickname) {
+    for (int i = 0; i < memberCount; ++i) {
+        if (strcmp(members[i].nickname, nickname) == 0) {
+            return &members[i];
+        }
+    }
+    return NULL;
+}
+
+void evaluateDance(Member *m) {
+    int index = rand() % MAX_DANCES;
+    Dance *d = &dances[index];
+
+    char originalSteps[MAX_STEPS][STEP_LEN];
+    for (int i = 0; i < d->stepCount; ++i) {
+        strcpy(originalSteps[i], d->steps[i]);
+    }
+
+    shuffle(d->steps, d->stepCount);
+
+    printf("Dance: %s\n", d->name);
+    printf("Shuffled Steps:\n");
+    for (int i = 0; i < d->stepCount; ++i) {
+        printf("%d. %s\n", i + 1, d->steps[i]);
+    }
+
+    char inputSteps[MAX_STEPS][STEP_LEN];
+    printf("\nEnter the steps in order:\n");
+    for (int i = 0; i < d->stepCount; ++i) {
+        printf("Step %d: ", i + 1);
+        scanf("%s", inputSteps[i]);
+    }
+
+    int exact = 1, correctCount = 0;
+    for (int i = 0; i < d->stepCount; ++i) {
+        if (strcmp(inputSteps[i], originalSteps[i]) != 0) {
+            exact = 0;
+        }
+        for (int j = 0; j < d->stepCount; ++j) {
+            if (strcmp(inputSteps[i], originalSteps[j]) == 0) {
+                correctCount++;
+                break;
+            }
+        }
+    }
+
+    int score = 0;
+    if (exact) score = 100;
+    else if (correctCount == d->stepCount) score = 50;
+    else if (correctCount > 0) score = 20;
+
+    m->score = score;
+
+    printf("\nCorrect Order: ");
+    for (int i = 0; i < d->stepCount; ++i) {
+        printf("%s ", originalSteps[i]);
+    }
+
+    printf("\nYour Order: ");
+    for (int i = 0; i < d->stepCount; ++i) {
+        printf("%s ", inputSteps[i]);
+    }
+
+    printf("\nScore: %d\n", score);
+}
+
+void learnDanceStep() {
+    char nickname[NAME_LEN];
+    int attempts = 0;
+    Member *m = NULL;
+
+    while (attempts < 3) {
+        printf("Enter your nickname: ");
+        scanf("%s", nickname);
+        m = findMemberByNickname(nickname);
+        if (m != NULL) break;
+        printf("Nickname not found. Try again.\n");
+        attempts++;
+    }
+
+    if (!m) {
+        printf("Failed to identify member. Returning to main menu.\n");
+        return;
+    }
+
+    if (!readDanceSteps("dance_step.txt")) {
+        printf("Error reading dance steps.\n");
+        return;
+    }
+
+    evaluateDance(m);
+}
+
+void menu() {
+    int choice;
+    srand((unsigned int)time(NULL));
+
+    do {
+        printf("\n== Dance Training Menu ==\n");
+        printf("1. Learn Basic Dance Steps\n");
+        printf("0. Exit\n");
+        printf("Select an option: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: learnDanceStep(); break;
+            case 0: printf("Exiting...\n"); break;
+            default: printf("Invalid option.\n");
+        }
+    } while (choice != 0);
+}
+
+int main() {
+    menu();
+    return 0;
+}
