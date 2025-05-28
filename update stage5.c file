@@ -1,0 +1,199 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_PATTERNS 6
+#define MAX_DESC 100
+#define MAX_NAME 50
+#define MAX_SONGS 4
+#define MAX_LINE 256
+
+typedef struct {
+    char name[MAX_NAME];
+    char description[MAX_DESC];
+} Pattern;
+
+typedef struct TreeNode {
+    char patternName[MAX_NAME];
+    struct TreeNode* next;
+} TreeNode;
+
+typedef struct {
+    char songName[MAX_NAME];
+    TreeNode* head;
+} SongTree;
+
+Pattern patterns[MAX_PATTERNS];
+SongTree songs[MAX_SONGS];
+int patternCount = 0;
+int songCount = 0;
+
+void clearInputBuffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+void loadPatterns() {
+    FILE* file = fopen("dance_pattern.txt", "r");
+    if (!file) {
+        printf("Error opening dance_pattern.txt\n");
+        exit(1);
+    }
+
+    char line[MAX_LINE];
+    patternCount = 0;
+    while (fgets(line, sizeof(line), file) && patternCount < MAX_PATTERNS) {
+        char* token = strtok(line, ":");
+        if (token) {
+            strncpy(patterns[patternCount].name, token, MAX_NAME);
+            token = strtok(NULL, "\n");
+            if (token) {
+                strncpy(patterns[patternCount].description, token, MAX_DESC);
+                patternCount++;
+            }
+        }
+    }
+    fclose(file);
+}
+
+void loadSongPatterns() {
+    FILE* file = fopen("analyz_dance-pattern.csv", "r");
+    if (!file) {
+        printf("Error opening analyz_dance-pattern.csv\n");
+        exit(1);
+    }
+
+    char line[MAX_LINE];
+    songCount = 0;
+    while (fgets(line, sizeof(line), file) && songCount < MAX_SONGS) {
+        char* token = strtok(line, ",");
+        if (token) {
+            strncpy(songs[songCount].songName, token, MAX_NAME);
+            songs[songCount].head = NULL;
+            TreeNode* current = NULL;
+
+            while ((token = strtok(NULL, ",\n")) != NULL) {
+                TreeNode* newNode = (TreeNode*)malloc(sizeof(TreeNode));
+                strncpy(newNode->patternName, token, MAX_NAME);
+                newNode->next = NULL;
+                if (!songs[songCount].head) {
+                    songs[songCount].head = newNode;
+                    current = newNode;
+                } else {
+                    current->next = newNode;
+                    current = newNode;
+                }
+            }
+            songCount++;
+        }
+    }
+    fclose(file);
+}
+
+void displayPatternQuiz() {
+    int correct = 0;
+    srand((unsigned int)time(NULL));
+
+    for (int i = 0; i < 4; i++) {
+        int idx = rand() % patternCount;
+        char* desc = patterns[idx].description;
+        int len = strlen(desc);
+        char snippet[11] = {0};
+        int start = rand() % (len > 10 ? len - 10 : 1);
+        strncpy(snippet, desc + start, 10);
+        snippet[10] = '\0';
+
+        printf("\nDescription snippet: %s\n", snippet);
+        printf("Enter the pattern name: ");
+        char answer[MAX_NAME];
+        fgets(answer, MAX_NAME, stdin);
+        answer[strcspn(answer, "\n")] = 0;
+
+        if (strcasecmp(answer, patterns[idx].name) == 0) {
+            printf("Correct!\n");
+            correct++;
+        } else {
+            printf("Incorrect. The correct answer was: %s\n", patterns[idx].name);
+        }
+    }
+
+    if (correct < 3) {
+        printf("\nYou answered less than 3 correctly. Returning to the previous menu.\n");
+        return;
+    }
+
+    loadSongPatterns();
+
+    printf("\nChoreography Patterns for Songs:\n");
+    for (int i = 0; i < songCount; i++) {
+        printf("%s: ", songs[i].songName);
+        TreeNode* current = songs[i].head;
+        while (current) {
+            printf("%s ", current->patternName);
+            current = current->next;
+        }
+        printf("\n");
+    }
+
+    printf("\nSelect a song to practice patterns (1-%d): ", songCount);
+    int choice;
+    scanf("%d", &choice);
+    clearInputBuffer();
+
+    if (choice < 1 || choice > songCount) {
+        printf("Invalid choice. Returning to the previous menu.\n");
+        return;
+    }
+
+    TreeNode* current = songs[choice - 1].head;
+    printf("\nStarting pattern: %s\n", current->patternName);
+    current = current->next;
+
+    while (current) {
+        printf("Enter the next pattern: ");
+        char answer[MAX_NAME];
+        fgets(answer, MAX_NAME, stdin);
+        answer[strcspn(answer, "\n")] = 0;
+
+        if (strcasecmp(answer, current->patternName) == 0) {
+            printf("Correct!\n");
+            current = current->next;
+        } else {
+            printf("Incorrect. Returning to the previous menu.\n");
+            return;
+        }
+    }
+
+    printf("Congratulations! You completed all patterns for %s.\n", songs[choice - 1].songName);
+}
+
+void learnDancePattern() {
+    loadPatterns();
+    displayPatternQuiz();
+}
+
+int main() {
+    int choice;
+    do {
+        printf("\nMenu:\n");
+        printf("1. Learn Dance Pattern\n");
+        printf("0. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        clearInputBuffer();
+
+        switch (choice) {
+            case 1:
+                learnDancePattern();
+                break;
+            case 0:
+                printf("Exiting program.\n");
+                break;
+            default:
+                printf("Invalid choice. Try again.\n");
+        }
+    } while (choice != 0);
+
+    return 0;
+}
