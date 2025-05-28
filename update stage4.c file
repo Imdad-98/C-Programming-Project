@@ -1,0 +1,155 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_MEMBERS 10
+
+// Member structure
+typedef struct {
+    char name[30];
+    char gender; // 'M' or 'F'
+} Member;
+
+// Voice profile structure
+typedef struct {
+    char name[30];
+    float frequency;
+    float amplitude;
+    float jitter;
+    int GRBAS[5]; // G, R, B, A, S
+} VoiceProfile;
+
+// GRBAS labels
+const char* grbasLabels[] = {"G", "R", "B", "A", "S"};
+
+// Member list
+Member members[MAX_MEMBERS] = {
+    {"Alice", 'F'}, {"Bob", 'M'}, {"Clara", 'F'},
+    {"David", 'M'}, {"Eve", 'F'}, {"Frank", 'M'},
+    {"Grace", 'F'}, {"Hank", 'M'}, {"Ivy", 'F'}, {"John", 'M'}
+};
+
+// Utility functions
+float getRandomFloat(float min, float max) {
+    return min + ((float) rand() / RAND_MAX) * (max - min);
+}
+
+int getRandomInt(int min, int max) {
+    return min + rand() % (max - min + 1);
+}
+
+Member* findMemberByName(char* name) {
+    for (int i = 0; i < MAX_MEMBERS; ++i) {
+        if (strcmp(name, members[i].name) == 0) {
+            return &members[i];
+        }
+    }
+    return NULL;
+}
+
+void guessValue(const char* label, float actual, float min, float max) {
+    float guess;
+    printf("Guess your %s value (%.1f - %.1f): ", label, min, max);
+
+    for (int attempt = 0; attempt < 3; attempt++) {
+        scanf("%f", &guess);
+
+        if (guess == actual) {
+            printf("Correct! You found your %s.\n", label);
+            return;
+        } else if (guess < actual) {
+            printf("Up\n");
+        } else {
+            printf("Down\n");
+        }
+    }
+    printf("Out of attempts. Your actual %s was %.2f\n", label, actual);
+}
+
+void guessGRBAS(const char* label, int actual) {
+    int guess;
+    printf("Guess your %s value (0-3): ", label);
+
+    for (int attempt = 0; attempt < 3; attempt++) {
+        scanf("%d", &guess);
+
+        if (guess == actual) {
+            printf("Correct!\n");
+            return;
+        } else if (guess < actual) {
+            printf("Up\n");
+        } else {
+            printf("Down\n");
+        }
+    }
+    printf("Out of attempts. The actual %s value was %d\n", label, actual);
+}
+
+void findMyVoice() {
+    char nickname[30];
+    printf("Enter your nickname: ");
+    scanf("%s", nickname);
+
+    Member* m = findMemberByName(nickname);
+    if (m == NULL) {
+        printf("Nickname not found.\n");
+        return;
+    }
+
+    float freq_min, freq_max, amp_min, amp_max, jitter_min, jitter_max;
+    if (m->gender == 'M') {
+        freq_min = 85.0; freq_max = 180.0;
+        amp_min = 2.5; amp_max = 3.6;
+        jitter_min = 0.2; jitter_max = 0.6;
+    } else {
+        freq_min = 165.0; freq_max = 255.0;
+        amp_min = 3.5; amp_max = 4.7;
+        jitter_min = 0.3; jitter_max = 1.0;
+    }
+
+    float trueFreq = getRandomFloat(freq_min, freq_max);
+    float trueAmp = getRandomFloat(amp_min, amp_max);
+    float trueJitter = getRandomFloat(jitter_min, jitter_max);
+    int GRBAS[5];
+    for (int i = 0; i < 5; ++i)
+        GRBAS[i] = getRandomInt(0, 3);
+
+    printf("\nLet's find your voice!\n");
+    guessValue("Frequency", trueFreq, freq_min, freq_max);
+    guessValue("Amplitude", trueAmp, amp_min, amp_max);
+    guessValue("Jitter", trueJitter, jitter_min, jitter_max);
+
+    printf("\nNow let's evaluate your voice tone (GRBAS scale 0-3)\n");
+    for (int i = 0; i < 5; ++i) {
+        guessGRBAS(grbasLabels[i], GRBAS[i]);
+    }
+
+    printf("\nCongratulations on completing your voice profile journey!\n");
+}
+
+int main() {
+    srand(time(NULL));
+    int choice;
+
+    do {
+        printf("\n--- Vocal Training Menu ---\n");
+        printf("1. Find My Voice\n");
+        printf("0. Exit\n");
+        printf("Select an option: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                findMyVoice();
+                break;
+            case 0:
+                printf("Goodbye!\n");
+                break;
+            default:
+                printf("Invalid input.\n");
+        }
+    } while (choice != 0);
+
+    return 0;
+}
