@@ -1,0 +1,132 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_ITEMS 7
+#define MAX_NAME_LENGTH 50
+
+// Food structure
+typedef struct {
+    char foodName[MAX_NAME_LENGTH];
+    int calories;
+} Food;
+
+// Stack structure
+typedef struct {
+    Food stack[MAX_ITEMS];
+    int top;
+} FoodStack;
+
+// Global food stack
+FoodStack foodStack = {.top = -1};
+
+// Valid calorie values
+int validCalories[] = {100, 150, 200, 250, 300};
+
+// Function to check if the calorie value is valid
+int isValidCalorie(int cal) {
+    for (int i = 0; i < 5; i++) {
+        if (validCalories[i] == cal) return 1;
+    }
+    return 0;
+}
+
+// Push food to stack
+int pushFood(char* name, int cal) {
+    if (foodStack.top >= MAX_ITEMS - 1) {
+        printf("You can only input up to %d food items per day.\n", MAX_ITEMS);
+        return 0;
+    }
+    foodStack.top++;
+    strcpy(foodStack.stack[foodStack.top].foodName, name);
+    foodStack.stack[foodStack.top].calories = cal;
+    return 1;
+}
+
+// Get total calories
+int totalCalories() {
+    int total = 0;
+    for (int i = 0; i <= foodStack.top; i++) {
+        total += foodStack.stack[i].calories;
+    }
+    return total;
+}
+
+// Main function to input daily food
+typedef void (*FuncPtr)();
+
+void setMyDailyFood() {
+    char foodName[MAX_NAME_LENGTH];
+    int cal;
+
+    printf("\n[II. Training > 1. Physical & Knowledge > G. Record My Daily Food]\n");
+
+    while (foodStack.top < MAX_ITEMS - 1) {
+        printf("\nEnter food name (or type 'stop' to finish): ");
+        fgets(foodName, sizeof(foodName), stdin);
+        foodName[strcspn(foodName, "\n")] = 0;
+
+        if (strcmp(foodName, "stop") == 0) break;
+
+        printf("Enter calories (100, 150, 200, 250, 300 only): ");
+        if (scanf("%d", &cal) != 1) {
+            printf("Invalid input. Try again.\n");
+            while (getchar() != '\n'); // clear buffer
+            continue;
+        }
+        getchar(); // consume newline
+
+        if (!isValidCalorie(cal)) {
+            printf("Invalid calorie amount. Choose from 100, 150, 200, 250, 300.\n");
+            continue;
+        }
+
+        if (totalCalories() + cal > 1500) {
+            printf("Total calories would exceed 1500. Entry denied.\n");
+            continue;
+        }
+
+        if (pushFood(foodName, cal)) {
+            printf("Added %s with %d kcal.\n", foodName, cal);
+        }
+    }
+
+    printf("\nYour total calorie intake today is: %d kcal\n", totalCalories());
+    printf("Foods consumed:\n");
+    for (int i = 0; i <= foodStack.top; i++) {
+        printf("- %s: %d kcal\n", foodStack.stack[i].foodName, foodStack.stack[i].calories);
+    }
+}
+
+// Example menu to trigger setMyDailyFood
+void showMenu() {
+    int choice;
+    while (1) {
+        printf("\n===== Millieways Training Menu =====\n");
+        printf("1. Record My Daily Food\n");
+        printf("0. Exit\n");
+        printf("Enter your choice: ");
+        if (scanf("%d", &choice) != 1) {
+            printf("Invalid input. Try again.\n");
+            while (getchar() != '\n');
+            continue;
+        }
+        getchar(); // clear buffer
+
+        switch (choice) {
+            case 1:
+                setMyDailyFood();
+                break;
+            case 0:
+                printf("Exiting program.\n");
+                return;
+            default:
+                printf("Invalid choice. Try again.\n");
+        }
+    }
+}
+
+int main() {
+    showMenu();
+    return 0;
+}
