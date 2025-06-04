@@ -1,0 +1,94 @@
+#include <stdio.h>
+#include <math.h>
+
+#define CATEGORY_COUNT 9
+#define MIN_SCORE 5  // Minimum required score on 11-point scale
+
+// Enum for category identifiers
+enum Category {
+    PHYSICAL,
+    KNOWLEDGE,
+    SELF_MANAGEMENT,
+    TEAMWORK,
+    KOREAN,
+    VOCAL,
+    DANCE,
+    VISUAL,
+    ACTING
+};
+
+// Function to get category name from enum
+const char* getCategoryName(enum Category c) {
+    switch (c) {
+        case PHYSICAL: return "Physical Strength";
+        case KNOWLEDGE: return "Knowledge";
+        case SELF_MANAGEMENT: return "Self-Management";
+        case TEAMWORK: return "Teamwork";
+        case KOREAN: return "Korean Language";
+        case VOCAL: return "Vocal";
+        case DANCE: return "Dance";
+        case VISUAL: return "Visual";
+        case ACTING: return "Acting";
+        default: return "Unknown";
+    }
+}
+
+int main() {
+    float scores[CATEGORY_COUNT];
+    float total = 0;
+    int i;
+
+    // Input and minimum check
+    for (i = 0; i < CATEGORY_COUNT; i++) {
+        printf("Enter score for %s: ", getCategoryName(i));
+        scanf("%f", &scores[i]);
+
+        if (scores[i] < MIN_SCORE) {
+            printf("Minimum required score is %d.\n", MIN_SCORE);
+            printf("The entire team must retake the %s category.\n", getCategoryName(i));
+            return 0; // Terminate if minimum score not met
+        }
+
+        total += scores[i];
+    }
+
+    // Truncate average score
+    int average = (int)(total / CATEGORY_COUNT);
+    printf("\nTeam Average Score (truncated): %d\n", average);
+    printf("Total Score: %.2f\n", total);
+
+    // Determine debut status
+    if (total >= 95 && total <= 100) {
+        printf("Congratulations! Your stage debut is confirmed!\n");
+    } else if (total >= 90 && total < 95) {
+        printf("The Debut Certification Team will hold a final evaluation meeting to make a decision.\n");
+    } else if (total >= 80 && total < 90) {
+        // Find indices of 3 lowest scores
+        int lowest[3] = {0, 1, 2};
+
+        // Bubble sort logic to find 3 smallest values
+        for (i = 3; i < CATEGORY_COUNT; i++) {
+            // Find the largest of the current 3 lowest
+            int maxIndex = 0;
+            for (int j = 1; j < 3; j++) {
+                if (scores[lowest[j]] > scores[lowest[maxIndex]]) {
+                    maxIndex = j;
+                }
+            }
+
+            // If current score is lower than the max of the lowest 3, replace it
+            if (scores[i] < scores[lowest[maxIndex]]) {
+                lowest[maxIndex] = i;
+            }
+        }
+
+        printf("Retake the three lowest-scoring categories (%s, %s, %s) after 30 days.\n",
+               getCategoryName(lowest[0]),
+               getCategoryName(lowest[1]),
+               getCategoryName(lowest[2]));
+    } else {
+        printf("The team needs more preparation before considering debut.\n");
+    }
+
+    return 0;
+}
