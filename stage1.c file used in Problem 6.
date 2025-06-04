@@ -1,0 +1,221 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_ROUTINES 100
+#define MAX_LEN 50
+
+typedef struct {
+    char date[MAX_LEN];          // e.g. "2025-06-05"
+    char weather[MAX_LEN];       // e.g. "Sunny"
+    char timeSlot[MAX_LEN];      // e.g. "Before Meal", "After Meal", "Before Performance"
+    char exerciseType[MAX_LEN];  // e.g. "Cardio"
+    int duration;                // in minutes
+    int calories;                // calories burned
+} WorkoutRoutine;
+
+WorkoutRoutine routines[MAX_ROUTINES];
+int routineCount = 0;
+
+void setMyWorkoutRoutine() {
+    int n, i;
+    printf("How many workout routines to enter? ");
+    scanf("%d", &n);
+    getchar(); // Clear newline
+
+    for (i = 0; i < n && routineCount < MAX_ROUTINES; i++, routineCount++) {
+        printf("Routine #%d:\n", i + 1);
+        printf("Date (YYYY-MM-DD): ");
+        fgets(routines[routineCount].date, MAX_LEN, stdin);
+        routines[routineCount].date[strcspn(routines[routineCount].date, "\n")] = '\0';
+
+        printf("Weather: ");
+        fgets(routines[routineCount].weather, MAX_LEN, stdin);
+        routines[routineCount].weather[strcspn(routines[routineCount].weather, "\n")] = '\0';
+
+        printf("Time slot (Before Meal / After Meal / Before Performance): ");
+        fgets(routines[routineCount].timeSlot, MAX_LEN, stdin);
+        routines[routineCount].timeSlot[strcspn(routines[routineCount].timeSlot, "\n")] = '\0';
+
+        printf("Exercise type: ");
+        fgets(routines[routineCount].exerciseType, MAX_LEN, stdin);
+        routines[routineCount].exerciseType[strcspn(routines[routineCount].exerciseType, "\n")] = '\0';
+
+        printf("Duration (minutes): ");
+        scanf("%d", &routines[routineCount].duration);
+
+        printf("Calories burned: ");
+        scanf("%d", &routines[routineCount].calories);
+        getchar(); // Clear newline
+    }
+
+    // Display entered data
+    printf("\n--- Entered Workout Routines ---\n");
+    for (i = 0; i < routineCount; i++) {
+        printf("Date: %s | Weather: %s | Time Slot: %s | Exercise: %s | Duration: %d min | Calories: %d kcal\n",
+               routines[i].date, routines[i].weather, routines[i].timeSlot,
+               routines[i].exerciseType, routines[i].duration, routines[i].calories);
+    }
+}
+
+void statsMyWorkoutRoutine() {
+    char inputDate[MAX_LEN], inputTime[MAX_LEN];
+    int i, j;
+    int maxTotal = 0;
+    char mostPerformed[MAX_LEN];
+    int caloriesByDate[MAX_ROUTINES] = {0};
+    char dates[MAX_ROUTINES][MAX_LEN];
+    int dateCount = 0;
+
+    // 1. List exercises and duration for specific date and time slot
+    printf("Enter date to search (YYYY-MM-DD): ");
+    fgets(inputDate, MAX_LEN, stdin);
+    inputDate[strcspn(inputDate, "\n")] = '\0';
+
+    printf("Enter time slot (Before Meal / After Meal / Before Performance): ");
+    fgets(inputTime, MAX_LEN, stdin);
+    inputTime[strcspn(inputTime, "\n")] = '\0';
+
+    printf("\n--- Exercises on %s (%s) ---\n", inputDate, inputTime);
+    for (i = 0; i < routineCount; i++) {
+        if (strcmp(routines[i].date, inputDate) == 0 && strcmp(routines[i].timeSlot, inputTime) == 0) {
+            printf("Exercise: %s | Duration: %d min\n", routines[i].exerciseType, routines[i].duration);
+        }
+    }
+
+    // 2. Total calories per date
+    printf("\n--- Total Calories Burned by Date ---\n");
+    for (i = 0; i < routineCount; i++) {
+        int found = 0;
+        for (j = 0; j < dateCount; j++) {
+            if (strcmp(dates[j], routines[i].date) == 0) {
+                caloriesByDate[j] += routines[i].calories;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            strcpy(dates[dateCount], routines[i].date);
+            caloriesByDate[dateCount] = routines[i].calories;
+            dateCount++;
+        }
+    }
+    for (i = 0; i < dateCount; i++) {
+        printf("%s: %d kcal\n", dates[i], caloriesByDate[i]);
+    }
+
+    // 3. Most performed exercise type
+    int maxCount = 0;
+    for (i = 0; i < routineCount; i++) {
+        int count = 1;
+        for (j = i + 1; j < routineCount; j++) {
+            if (strcmp(routines[i].exerciseType, routines[j].exerciseType) == 0) {
+                count++;
+            }
+        }
+        if (count > maxCount) {
+            maxCount = count;
+            strcpy(mostPerformed, routines[i].exerciseType);
+        }
+    }
+    printf("\nMost performed exercise type: %s (%d times)\n", mostPerformed, maxCount);
+
+    // 4. Day with longest total duration
+    int maxDuration = 0;
+    char maxDate[MAX_LEN] = "";
+    for (i = 0; i < dateCount; i++) {
+        int durationSum = 0;
+        for (j = 0; j < routineCount; j++) {
+            if (strcmp(routines[j].date, dates[i]) == 0) {
+                durationSum += routines[j].duration;
+            }
+        }
+        if (durationSum > maxDuration) {
+            maxDuration = durationSum;
+            strcpy(maxDate, dates[i]);
+        }
+    }
+    printf("Day with longest workout: %s (%d min)\n", maxDate, maxDuration);
+
+    // 5. Day most frequent specific exercise was done
+    char targetExercise[MAX_LEN];
+    printf("Enter exercise type to analyze frequency: ");
+    fgets(targetExercise, MAX_LEN, stdin);
+    targetExercise[strcspn(targetExercise, "\n")] = '\0';
+
+    int maxFreq = 0;
+    char freqDate[MAX_LEN] = "";
+    for (i = 0; i < dateCount; i++) {
+        int count = 0;
+        for (j = 0; j < routineCount; j++) {
+            if (strcmp(routines[j].date, dates[i]) == 0 &&
+                strcmp(routines[j].exerciseType, targetExercise) == 0) {
+                count++;
+            }
+        }
+        if (count > maxFreq) {
+            maxFreq = count;
+            strcpy(freqDate, dates[i]);
+        }
+    }
+    printf("Day most %s exercises were done: %s (%d times)\n", targetExercise, freqDate, maxFreq);
+
+    // Bonus: Time slot with highest average calorie burn
+    char* slots[] = {"Before Meal", "After Meal", "Before Performance"};
+    int slotTotal[3] = {0}, slotCount[3] = {0};
+    for (i = 0; i < routineCount; i++) {
+        for (j = 0; j < 3; j++) {
+            if (strcmp(routines[i].timeSlot, slots[j]) == 0) {
+                slotTotal[j] += routines[i].calories;
+                slotCount[j]++;
+            }
+        }
+    }
+
+    double maxAvg = 0;
+    int maxIdx = -1;
+    for (i = 0; i < 3; i++) {
+        if (slotCount[i] > 0) {
+            double avg = (double)slotTotal[i] / slotCount[i];
+            if (avg > maxAvg) {
+                maxAvg = avg;
+                maxIdx = i;
+            }
+        }
+    }
+    if (maxIdx != -1)
+        printf("Time slot with highest average calorie burn: %s (%.2lf kcal)\n",
+               slots[maxIdx], maxAvg);
+}
+
+// Extend your menu system here
+void showMenu() {
+    int choice;
+    while (1) {
+        printf("\n--- Workout Routine Menu ---\n");
+        printf("1. Input Workout Routine\n");
+        printf("2. Analyze Workout Routine\n");
+        printf("0. Exit\n");
+        printf("Choice: ");
+        scanf("%d", &choice);
+        getchar(); // remove newline
+
+        switch (choice) {
+            case 1:
+                setMyWorkoutRoutine();
+                break;
+            case 2:
+                statsMyWorkoutRoutine();
+                break;
+            case 0:
+                return;
+            default:
+                printf("Invalid choice.\n");
+        }
+    }
+}
+
+int main() {
+    showMenu();
+    return 0;
+}
