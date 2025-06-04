@@ -1,0 +1,140 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_MEMBERS 10
+#define MAX_DAYS 7
+
+// Structure to store member info
+typedef struct {
+    char name[30];
+    int age;
+    float height;
+    float weight;
+    int caloriesPerDay[MAX_DAYS];
+    char workout[MAX_DAYS][50];
+    char diet[MAX_DAYS][100];
+} Member;
+
+// Global array of members
+Member members[MAX_MEMBERS];
+int memberCount = 0;
+
+const char *days[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+
+// Function prototypes
+void menu();
+void enterPhysicalCondition();
+void viewPhysicalCondition();
+void setWorkoutRoutine();
+void viewWorkoutRoutine();
+void setDietPlan();
+void viewDietPlan();
+
+int main() {
+    int choice;
+    while (1) {
+        menu();
+        printf("Enter your choice (0 to exit): ");
+        scanf("%d", &choice);
+        getchar(); // consume newline
+        switch (choice) {
+            case 1: enterPhysicalCondition(); break;
+            case 2: viewPhysicalCondition(); break;
+            case 3: setWorkoutRoutine(); break;
+            case 4: viewWorkoutRoutine(); break;
+            case 5: setDietPlan(); break;
+            case 6: viewDietPlan(); break;
+            case 0: exit(0);
+            default: printf("Invalid option. Try again.\n");
+        }
+    }
+    return 0;
+}
+
+void menu() {
+    printf("\n[1. Health and Knowledge Menu]\n");
+    printf("1. Enter Physical Condition\n");
+    printf("2. View Physical Condition\n");
+    printf("3. Set Workout Routine\n");
+    printf("4. View Workout Routine\n");
+    printf("5. Set Diet Plan\n");
+    printf("6. View Diet Plan\n");
+}
+
+void enterPhysicalCondition() {
+    if (memberCount >= MAX_MEMBERS) {
+        printf("Maximum members reached.\n");
+        return;
+    }
+    printf("Enter member name: ");
+    fgets(members[memberCount].name, sizeof(members[memberCount].name), stdin);
+    members[memberCount].name[strcspn(members[memberCount].name, "\n")] = 0;
+
+    printf("Enter age: ");
+    scanf("%d", &members[memberCount].age);
+
+    printf("Enter height (cm): ");
+    scanf("%f", &members[memberCount].height);
+
+    printf("Enter weight (kg): ");
+    scanf("%f", &members[memberCount].weight);
+    getchar(); // consume newline
+
+    memberCount++;
+    printf("Member data saved successfully.\n");
+}
+
+void viewPhysicalCondition() {
+    for (int i = 0; i < memberCount; i++) {
+        printf("\nMember %d\n", i + 1);
+        printf("Name: %s\n", members[i].name);
+        printf("Age: %d\n", members[i].age);
+        printf("Height: %.1f cm\n", members[i].height);
+        printf("Weight: %.1f kg\n", members[i].weight);
+    }
+}
+
+void setWorkoutRoutine() {
+    for (int i = 0; i < memberCount; i++) {
+        printf("\nSetting workout for %s:\n", members[i].name);
+        for (int d = 0; d < MAX_DAYS; d++) {
+            printf("Enter workout for %s: ", days[d]);
+            fgets(members[i].workout[d], sizeof(members[i].workout[d]), stdin);
+            members[i].workout[d][strcspn(members[i].workout[d], "\n")] = 0;
+        }
+    }
+}
+
+void viewWorkoutRoutine() {
+    for (int i = 0; i < memberCount; i++) {
+        printf("\nWorkout plan for %s:\n", members[i].name);
+        for (int d = 0; d < MAX_DAYS; d++) {
+            printf("%s: %s\n", days[d], members[i].workout[d]);
+        }
+    }
+}
+
+void setDietPlan() {
+    for (int i = 0; i < memberCount; i++) {
+        printf("\nSetting diet for %s:\n", members[i].name);
+        for (int d = 0; d < MAX_DAYS; d++) {
+            printf("Enter calories for %s: ", days[d]);
+            scanf("%d", &members[i].caloriesPerDay[d]);
+            getchar(); // consume newline
+
+            printf("Enter diet for %s: ", days[d]);
+            fgets(members[i].diet[d], sizeof(members[i].diet[d]), stdin);
+            members[i].diet[d][strcspn(members[i].diet[d], "\n")] = 0;
+        }
+    }
+}
+
+void viewDietPlan() {
+    for (int i = 0; i < memberCount; i++) {
+        printf("\nDiet plan for %s:\n", members[i].name);
+        for (int d = 0; d < MAX_DAYS; d++) {
+            printf("%s: %d kcal, %s\n", days[d], members[i].caloriesPerDay[d], members[i].diet[d]);
+        }
+    }
+}
