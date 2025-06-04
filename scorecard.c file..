@@ -1,0 +1,190 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define NUM_CANDIDATES 6
+#define NUM_CATEGORIES 5
+#define MAX_NAME 50
+
+// Candidate data
+char candidate_names[NUM_CANDIDATES][MAX_NAME] = {
+    "Jiyeon Park",
+    "Ethan Smith",
+    "Helena Silva",
+    "Liam Wilson",
+    "Minji Lee",
+    "Noah Brown"
+};
+
+int candidate_ids[NUM_CANDIDATES];
+int scores[NUM_CANDIDATES][7]; // [0]=ID, [1~5]=scores, [6]=total
+
+// Category names
+const char *categories[NUM_CATEGORIES] = {
+    "Music Proficiency",
+    "Dance Proficiency",
+    "Vocal Proficiency",
+    "Korean Proficiency",
+    "Korean Grammar Proficiency"
+};
+
+// Generate unique 6-digit IDs
+void generate_ids() {
+    for (int i = 0; i < NUM_CANDIDATES; i++) {
+        int unique;
+        do {
+            unique = 1;
+            candidate_ids[i] = 100000 + rand() % 900000;
+            for (int j = 0; j < i; j++) {
+                if (candidate_ids[i] == candidate_ids[j]) {
+                    unique = 0;
+                    break;
+                }
+            }
+        } while (!unique);
+        scores[i][0] = candidate_ids[i]; // store ID
+    }
+}
+
+// Input scores
+void input_scores(const char *judge_name, const char *field) {
+    printf("\n++++++++++++++++++++++++++++++++++++\n");
+    printf("#     Audition Evaluation Entry    #\n");
+    printf("++++++++++++++++++++++++++++++++++++\n");
+    printf("> Judge Name: %s\n", judge_name);
+    printf("> Expertise: %s\n", field);
+    printf("++++++++++++++++++++++++++++++++++++\n");
+
+    for (int cat = 0; cat < NUM_CATEGORIES; cat++) {
+        printf("\n-- %s --\n", categories[cat]);
+        for (int i = 0; i < NUM_CANDIDATES; i++) {
+            int s;
+            printf("%s (ID: %d): ", candidate_names[i], candidate_ids[i]);
+            while (1) {
+                scanf("%d", &s);
+                if (s >= 10 && s <= 100) break;
+                printf("Invalid score. Enter 10–100: ");
+            }
+            scores[i][cat + 1] = s;
+        }
+    }
+}
+
+// Review and confirm
+int confirm_submission() {
+    printf("\n====================================\n");
+    printf("Submission completed.\nPlease review your input!\n");
+    printf("====================================\n");
+    for (int i = 0; i < NUM_CANDIDATES; i++) {
+        printf("%s (ID: %d): ", candidate_names[i], candidate_ids[i]);
+        for (int j = 1; j <= NUM_CATEGORIES; j++) {
+            printf("%d ", scores[i][j]);
+        }
+        printf("\n");
+    }
+    char choice;
+    printf("\nWould you like to submit? (Y/N): ");
+    scanf(" %c", &choice);
+    return (choice == 'Y' || choice == 'y');
+}
+
+// Modify scores before submission
+void modify_scores() {
+    char name[MAX_NAME];
+    int id, found = 0;
+
+    while (1) {
+        printf("\nEnter candidate name to modify (or 'exit' to stop): ");
+        scanf(" %[^\n]", name);
+        if (strcmp(name, "exit") == 0) break;
+
+        printf("Enter 6-digit ID: ");
+        scanf("%d", &id);
+
+        for (int i = 0; i < NUM_CANDIDATES; i++) {
+            if (strcmp(candidate_names[i], name) == 0 && candidate_ids[i] == id) {
+                printf("Modifying scores for %s (ID: %d)\n", name, id);
+                for (int j = 0; j < NUM_CATEGORIES; j++) {
+                    int new_score;
+                    printf("%s: ", categories[j]);
+                    while (1) {
+                        scanf("%d", &new_score);
+                        if (new_score >= 10 && new_score <= 100) break;
+                        printf("Invalid score. Try again (10–100): ");
+                    }
+                    scores[i][j + 1] = new_score;
+                }
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            printf("Candidate not found. Check spelling or ID.\n");
+        }
+    }
+}
+
+// Calculate total scores
+void calculate_totals() {
+    for (int i = 0; i < NUM_CANDIDATES; i++) {
+        int total = 0;
+        for (int j = 1; j <= NUM_CATEGORIES; j++) {
+            total += scores[i][j];
+        }
+        scores[i][6] = total;
+    }
+}
+
+// Sort and show top 4
+void show_top_candidates() {
+    // Selection sort
+    for (int i = 0; i < NUM_CANDIDATES - 1; i++) {
+        for (int j = i + 1; j < NUM_CANDIDATES; j++) {
+            if (scores[i][6] < scores[j][6]) {
+                for (int k = 0; k < 7; k++) {
+                    int temp = scores[i][k];
+                    scores[i][k] = scores[j][k];
+                    scores[j][k] = temp;
+                }
+                char temp_name[MAX_NAME];
+                strcpy(temp_name, candidate_names[i]);
+                strcpy(candidate_names[i], candidate_names[j]);
+                strcpy(candidate_names[j], temp_name);
+                int temp_id = candidate_ids[i];
+                candidate_ids[i] = candidate_ids[j];
+                candidate_ids[j] = temp_id;
+            }
+        }
+    }
+
+    printf("\n###########################################\n");
+    printf("# Congratulations! Welcome to Milliways!  #\n");
+    printf("###########################################\n");
+    for (int i = 0; i < 4; i++) {
+        printf("%d. %s (Total Score: %d)\n", i + 1, candidate_names[i], scores[i][6]);
+    }
+}
+
+// Main
+int main() {
+    srand(42); // seed for consistent IDs
+    generate_ids();
+
+    char judge_name[MAX_NAME], field[MAX_NAME];
+
+    printf("Enter Judge Name: ");
+    scanf(" %[^\n]", judge_name);
+    printf("Enter Area of Expertise: ");
+    scanf(" %[^\n]", field);
+
+    input_scores(judge_name, field);
+
+    if (!confirm_submission()) {
+        modify_scores();
+    }
+
+    calculate_totals();
+    show_top_candidates();
+
+    return 0;
+}
