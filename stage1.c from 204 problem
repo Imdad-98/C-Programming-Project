@@ -1,0 +1,105 @@
+#include <stdio.h>
+
+#define MAX_SIZE 100
+
+// Exercise mapping
+const int exerciseCalories[7] = {200, 250, 300, 150, 250, 300, 100};
+const char *exerciseNames[7] = {
+    "30 minutes brisk walking or jogging",
+    "Full body strength training",
+    "30 minutes swimming or cycling",
+    "30 minutes stretching and yoga",
+    "30 minutes dancing or aerobics",
+    "Tennis, badminton, dance",
+    "Light walking"
+};
+
+// Stack structure for daily food calories
+typedef struct {
+    int data[MAX_SIZE];
+    int top;  // index of top item, -1 if empty
+} CalorieStack;
+
+// Function prototypes
+void printStack(const CalorieStack *stack);
+int totalCalories(const CalorieStack *stack);
+void mngMyDailyCalorie(CalorieStack *stack);
+
+int main() {
+    // Example: Initialize stack with some calorie records
+    // Suppose the stack contains calories from recent meals: 300, 150, 250, 100
+    // with 100 at the top (last added)
+    CalorieStack myStack = {{300, 150, 250, 100}, 3}; // 4 items, top index is 3
+
+    printf("Initial calorie records:\n");
+    printStack(&myStack);
+    printf("Total calories: %d\n\n", totalCalories(&myStack));
+
+    // Call calorie management function
+    mngMyDailyCalorie(&myStack);
+
+    return 0;
+}
+
+void printStack(const CalorieStack *stack) {
+    if (stack->top == -1) {
+        printf("No remaining calorie records.\n");
+        return;
+    }
+    printf("Remaining calorie records (top to bottom):\n");
+    for (int i = stack->top; i >= 0; i--) {
+        printf("%d ", stack->data[i]);
+    }
+    printf("\n");
+}
+
+int totalCalories(const CalorieStack *stack) {
+    int total = 0;
+    for (int i = 0; i <= stack->top; i++) {
+        total += stack->data[i];
+    }
+    return total;
+}
+
+void mngMyDailyCalorie(CalorieStack *stack) {
+    int exerciseChoice;
+
+    printf("Select an exercise to perform:\n");
+    for (int i = 0; i < 7; i++) {
+        printf("%d: %s (Burns %d calories)\n", i + 1, exerciseNames[i], exerciseCalories[i]);
+    }
+    printf("Enter exercise number (1-7): ");
+    if (scanf("%d", &exerciseChoice) != 1) {
+        printf("Invalid input.\n");
+        return;
+    }
+
+    if (exerciseChoice < 1 || exerciseChoice > 7) {
+        printf("Invalid exercise choice.\n");
+        return;
+    }
+
+    if (stack->top == -1) {
+        printf("No calorie records to remove.\n");
+        return;
+    }
+
+    int topCalorie = stack->data[stack->top];
+    int exerciseCal = exerciseCalories[exerciseChoice - 1];
+
+    printf("Selected exercise burns %d calories.\n", exerciseCal);
+    printf("Top calorie record to remove: %d calories.\n", topCalorie);
+
+    if (exerciseCal >= topCalorie) {
+        // Remove top item
+        stack->top--;
+        printf("Calorie record removed successfully.\n");
+    } else {
+        int deficit = topCalorie - exerciseCal;
+        printf("Insufficient exercise amount! You need %d more calories burned to remove the top record.\n", deficit);
+    }
+
+    // Print remaining records and total calories
+    printStack(stack);
+    printf("Total remaining calories: %d\n", totalCalories(stack));
+}
