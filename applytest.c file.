@@ -1,0 +1,140 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
+
+#define CATEGORY_COUNT 9
+
+enum Category {
+    PHYSICAL,
+    KNOWLEDGE,
+    SELF_MANAGEMENT,
+    TEAMWORK,
+    KOREAN,
+    VOCAL,
+    DANCE,
+    VISUAL,
+    ACTING
+};
+
+// Function to get the name of the category
+const char* getCategoryName(int index) {
+    switch(index) {
+        case PHYSICAL: return "Physical Strength";
+        case KNOWLEDGE: return "Knowledge";
+        case SELF_MANAGEMENT: return "Self-Management";
+        case TEAMWORK: return "Teamwork";
+        case KOREAN: return "Korean Language";
+        case VOCAL: return "Vocal";
+        case DANCE: return "Dance";
+        case VISUAL: return "Visual";
+        case ACTING: return "Acting";
+        default: return "Unknown";
+    }
+}
+
+// Convert YYYYMMDD to number of days
+int convertToDays(int yyyymmdd) {
+    int year = yyyymmdd / 10000;
+    int month = (yyyymmdd % 10000) / 100;
+    int day = yyyymmdd % 100;
+
+    if (month < 3) {
+        year--;
+        month += 12;
+    }
+
+    return 365 * year + year / 4 - year / 100 + year / 400 +
+           (153 * month - 457) / 5 + day - 306;
+}
+
+// Get today's date in YYYYMMDD format
+int getTodayDate() {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    return tm.tm_year * 10000 + (tm.tm_mon + 1) * 100 + tm.tm_mday + 19000000;
+}
+
+int main() {
+    int startDate;
+    int examDates[CATEGORY_COUNT] = {0};
+    int scheduled[CATEGORY_COUNT] = {0};
+
+    printf("Enter training start date (YYYYMMDD): ");
+    scanf("%d", &startDate);
+
+    int today = getTodayDate();
+
+    while (1) {
+        int i;
+        printf("\nAvailable Categories:\n");
+        for (i = 0; i < CATEGORY_COUNT; i++) {
+            if (!scheduled[i]) {
+                printf("%d. %s\n", i, getCategoryName(i));
+            }
+        }
+
+        int choice;
+        printf("Select a category to schedule (-1 to exit): ");
+        scanf("%d", &choice);
+
+        if (choice == -1) break;
+        if (choice < 0 || choice >= CATEGORY_COUNT || scheduled[choice]) {
+            printf("Invalid choice or already scheduled.\n");
+            continue;
+        }
+
+        // Enforce order:
+        if ((choice == SELF_MANAGEMENT || choice == TEAMWORK) &&
+            (!scheduled[PHYSICAL] || !scheduled[KNOWLEDGE])) {
+            printf("Must complete Physical Strength and Knowledge first.\n");
+            continue;
+        }
+
+        if ((choice >= KOREAN && choice <= ACTING) &&
+            (!scheduled[SELF_MANAGEMENT] || !scheduled[TEAMWORK])) {
+            printf("Must complete Self-Management and Teamwork first.\n");
+            continue;
+        }
+
+        int examDate;
+        printf("Enter exam date for %s (YYYYMMDD): ", getCategoryName(choice));
+        scanf("%d", &examDate);
+
+        int daysFromStart = convertToDays(examDate) - convertToDays(startDate);
+
+        if (daysFromStart < 30 || daysFromStart > 100) {
+            printf("Exam must be between 30 and 100 days from training start.\n");
+            continue;
+        }
+
+        examDates[choice] = examDate;
+        scheduled[choice] = 1;
+
+        printf("Scheduled %s exam on %d.\n", getCategoryName(choice), examDate);
+    }
+
+    printf("\n--- Scheduled Exams ---\n");
+    int todayDays = convertToDays(today);
+
+    for (int i = 0; i < CATEGORY_COUNT; i++) {
+        if (scheduled[i]) {
+            int daysUntilExam = convertToDays(examDates[i]) - todayDays;
+            printf("%s - %d", getCategoryName(i), examDates[i]);
+
+            if (daysUntilExam >= 0 && daysUntilExam <= 10) {
+                printf(" [Reminder: Exam in %d day(s)]", daysUntilExam);
+            }
+
+            if (examDates[i] == today) {
+                srand(time(NULL));
+                int room = rand() % 10 + 1;
+                printf(" [Today! Assigned Room: %d]", room);
+            }
+
+            printf("\n");
+        }
+    }
+
+    return 0;
+}
