@@ -1,0 +1,218 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define AIRPORT_CODE_LEN 4  // 3 letters + '\0'
+
+// Ticket struct
+typedef struct {
+    char from[AIRPORT_CODE_LEN];
+    char to[AIRPORT_CODE_LEN];
+    int used;  // Mark if ticket is used
+} Ticket;
+
+// Tickets collection struct
+typedef struct {
+    Ticket *tickets;
+    int count;
+} Tickets;
+
+// Dynamic array (ArrayList) for storing travel path (airport codes)
+typedef struct {
+    char **data;    // array of strings
+    int size;       // current number of elements
+    int capacity;   // allocated capacity
+} TravelPath;
+
+// Initialize TravelPath dynamic array
+void initTravelPath(TravelPath *path) {
+    path->capacity = 10;
+    path->size = 0;
+    path->data = (char **)malloc(sizeof(char *) * path->capacity);
+    if (!path->data) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+}
+
+// Add airport code to TravelPath
+void addTravelPath(TravelPath *path, const char *airport) {
+    if (path->size == path->capacity) {
+        path->capacity *= 2;
+        path->data = (char **)realloc(path->data, sizeof(char *) * path->capacity);
+        if (!path->data) {
+            fprintf(stderr, "Memory reallocation failed\n");
+            exit(1);
+        }
+    }
+    path->data[path->size] = (char *)malloc(sizeof(char) * AIRPORT_CODE_LEN);
+    if (!path->data[path->size]) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+    strcpy(path->data[path->size], airport);
+    path->size++;
+}
+
+// Remove last airport code from TravelPath
+void removeLastTravelPath(TravelPath *path) {
+    if (path->size > 0) {
+        free(path->data[path->size - 1]);
+        path->size--;
+    }
+}
+
+// Free all memory of TravelPath
+void freeTravelPath(TravelPath *path) {
+    for (int i = 0; i < path->size; i++) {
+        free(path->data[i]);
+    }
+    free(path->data);
+    path->data = NULL;
+    path->size = 0;
+    path->capacity = 0;
+}
+
+// Compare two travel paths lex order, return -1 if a < b, 1 if a > b, 0 if equal
+int compareTravelPaths(const TravelPath *a, const TravelPath *b) {
+    int minSize = a->size < b->size ? a->size : b->size;
+    for (int i = 0; i < minSize; i++) {
+        int cmp = strcmp(a->data[i], b->data[i]);
+        if (cmp < 0) return -1;
+        else if (cmp > 0) return 1;
+    }
+    if (a->size < b->size) return -1;
+    else if (a->size > b->size) return 1;
+    else return 0;
+}
+
+// Global variable to store best route found
+TravelPath bestPath;
+
+// DFS to find valid travel routes using tickets
+void dfs(Tickets *tickets, TravelPath *currentPath, int usedCount, int totalTickets) {
+    if (usedCount == totalTickets) {
+        // Found a complete route - check if lex smaller than bestPath
+        if (bestPath.size == 0 || compareTravelPaths(currentPath, &bestPath) < 0) {
+            // Update bestPath
+            freeTravelPath(&bestPath);
+            initTravelPath(&bestPath);
+            for (int i = 0; i < currentPath->size; i++) {
+                addTravelPath(&bestPath, currentPath->data[i]);
+            }
+        }
+        return;
+    }
+
+    const char *lastAirport = currentPath->data[currentPath->size - 1];
+    for (int i = 0; i < tickets->count; i++) {
+        if (!tickets->tickets[i].used && strcmp(tickets->tickets[i].from, lastAirport) == 0) {
+            tickets->tickets[i].used = 1;
+            addTravelPath(currentPath, tickets->tickets[i].to);
+
+            dfs(tickets, currentPath, usedCount + 1, totalTickets);
+
+            // Backtrack
+            tickets->tickets[i].used = 0;
+            removeLastTravelPath(currentPath);
+        }
+    }
+}
+
+// Read tickets from file into Tickets struct
+int loadTickets(const char *filename, Tickets *tickets) {
+    FILE *fp = fopen(filename, "r");
+    if (!fp) {
+        fprintf(stderr, "Failed to open file %s\n", filename);
+        return 0;
+    }
+
+    // Estimate max lines (optional, or realloc later)
+    tickets->count = 0;
+    tickets->tickets = NULL;
+    int capacity = 10;
+    tickets->tickets = (Ticket *)malloc(sizeof(Ticket) * capacity);
+    if (!tickets->tickets) {
+        fprintf(stderr, "Memory allocation failed\n");
+        fclose(fp);
+        return 0;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        if (tickets->count == capacity) {
+            capacity *= 2;
+            tickets->tickets = (Ticket *)realloc(tickets->tickets, sizeof(Ticket) * capacity);
+            if (!tickets->tickets) {
+                fprintf(stderr, "Memory allocation failed\n");
+                fclose(fp);
+                return 0;
+            }
+        }
+
+        // Parse line "FROM,TO"
+        char *token = strtok(line, ",");
+        if (!token) continue;
+        strncpy(tickets->tickets[tickets->count].from, token, AIRPORT_CODE_LEN - 1);
+        tickets->tickets[tickets->count].from[AIRPORT_CODE_LEN - 1] = '\0';
+
+        token = strtok(NULL, ",\n\r");
+        if (!token) continue;
+        strncpy(tickets->tickets[tickets->count].to, token, AIRPORT_CODE_LEN - 1);
+        tickets->tickets[tickets->count].to[AIRPORT_CODE_LEN - 1] = '\0';
+
+        tickets->tickets[tickets->count].used = 0;
+        tickets->count++;
+    }
+
+    fclose(fp);
+    return 1;
+}
+
+// Print travel path
+void printTravelPath(const TravelPath *path) {
+    for (int i = 0; i < path->size; i++) {
+        printf("%s", path->data[i]);
+        if (i != path->size - 1) printf(" -> ");
+    }
+    printf("\n");
+}
+
+// Main function for overseas training plan
+void planOverseasTraining() {
+    Tickets tickets;
+    if (!loadTickets("tickets.txt", &tickets)) {
+        printf("Failed to load tickets\n");
+        return;
+    }
+
+    TravelPath currentPath;
+    initTravelPath(&currentPath);
+    initTravelPath(&bestPath);
+
+    // Start always from "ICN"
+    addTravelPath(&currentPath, "ICN");
+
+    dfs(&tickets, &currentPath, 0, tickets.count);
+
+    if (bestPath.size == 0) {
+        printf("No valid travel route found.\n");
+    } else {
+        printf("Best travel route:\n");
+        printTravelPath(&bestPath);
+    }
+
+    // Cleanup
+    freeTravelPath(&currentPath);
+    freeTravelPath(&bestPath);
+    free(tickets.tickets);
+}
+
+// If you want to integrate with an existing menu, call planOverseasTraining() from there.
+// For standalone testing, you can use main as below:
+
+int main() {
+    printf("=== Overseas Training Travel Planner ===\n");
+    planOverseasTraining();
+    return 0;
+}
