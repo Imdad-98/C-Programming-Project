@@ -1,0 +1,172 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_LINE_LEN 100
+#define MAX_QUEUE_SIZE 6
+
+// Accessory structure
+typedef struct {
+    char type[50];
+    char purpose[100];
+} Accessory;
+
+// Circular Queue structure
+typedef struct {
+    Accessory* items[MAX_QUEUE_SIZE];
+    int front;
+    int rear;
+    int count;
+} CircularQueue;
+
+// Initialize the circular queue
+void initQueue(CircularQueue* q) {
+    q->front = 0;
+    q->rear = -1;
+    q->count = 0;
+}
+
+// Check if the queue is full
+int isFull(CircularQueue* q) {
+    return q->count == MAX_QUEUE_SIZE;
+}
+
+// Check if the queue is empty
+int isEmpty(CircularQueue* q) {
+    return q->count == 0;
+}
+
+// Enqueue function
+int enqueue(CircularQueue* q, Accessory* acc) {
+    if (isFull(q)) {
+        printf("[!] Queue is full. Cannot enqueue more items.\n");
+        return 0;
+    }
+    q->rear = (q->rear + 1) % MAX_QUEUE_SIZE;
+    q->items[q->rear] = acc;
+    q->count++;
+    return 1;
+}
+
+// Dequeue function
+Accessory* dequeue(CircularQueue* q) {
+    if (isEmpty(q)) {
+        printf("[!] Queue is empty. Cannot dequeue.\n");
+        return NULL;
+    }
+    Accessory* acc = q->items[q->front];
+    q->front = (q->front + 1) % MAX_QUEUE_SIZE;
+    q->count--;
+    return acc;
+}
+
+// Display the current contents of the queue
+void displayQueue(CircularQueue* q) {
+    printf("\n=== Selected Accessories in Queue ===\n");
+    if (isEmpty(q)) {
+        printf("[!] Queue is empty.\n");
+        return;
+    }
+    for (int i = 0; i < q->count; i++) {
+        int idx = (q->front + i) % MAX_QUEUE_SIZE;
+        printf("%d. Type: %s | Purpose: %s\n", i + 1, q->items[idx]->type, q->items[idx]->purpose);
+    }
+}
+
+// Load accessories from file
+int loadAccessories(const char* filename, Accessory*** listPtr) {
+    FILE* fp = fopen(filename, "r");
+    if (!fp) {
+        perror("Failed to open accessory file");
+        return 0;
+    }
+
+    int count = 0;
+    char buffer[MAX_LINE_LEN];
+    Accessory** list = malloc(sizeof(Accessory*) * 100);
+
+    while (fgets(buffer, sizeof(buffer), fp)) {
+        char* newline = strchr(buffer, '\n');
+        if (newline) *newline = '\0';
+
+        char* token = strtok(buffer, ",");
+        if (!token) continue;
+
+        Accessory* acc = malloc(sizeof(Accessory));
+        strcpy(acc->type, token);
+
+        token = strtok(NULL, ",");
+        if (token)
+            strcpy(acc->purpose, token);
+        else
+            strcpy(acc->purpose, "N/A");
+
+        list[count++] = acc;
+    }
+
+    fclose(fp);
+    *listPtr = list;
+    return count;
+}
+
+// Free accessory memory
+void freeAccessories(Accessory** list, int count) {
+    for (int i = 0; i < count; i++) {
+        free(list[i]);
+    }
+    free(list);
+}
+
+// Shuffle helper function
+void shuffle(int* array, int n) {
+    for (int i = n - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        int temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+}
+
+// Main function for accessory training
+void applyAccessory() {
+    srand(time(NULL));
+
+    Accessory** allAccessories;
+    int total = loadAccessories("accessory.txt", &allAccessories);
+
+    if (total < 4) {
+        printf("[!] Not enough accessory data (need at least 4).\n");
+        return;
+    }
+
+    int selectCount = 4 + rand() % 3; // 4 to 6 accessories
+    int indices[total];
+    for (int i = 0; i < total; i++) indices[i] = i;
+    shuffle(indices, total);
+
+    CircularQueue q;
+    initQueue(&q);
+
+    for (int i = 0; i < selectCount; i++) {
+        if (!enqueue(&q, allAccessories[indices[i]])) break;
+    }
+
+    displayQueue(&q);
+
+    if (isFull(&q))
+        printf("[!] Queue is now FULL.\n");
+    if (isEmpty(&q))
+        printf("[!] Queue is EMPTY.\n");
+
+    for (int i = selectCount; i < total; i++) {
+        free(allAccessories[indices[i]]);
+    }
+    free(allAccessories);
+}
+
+// Optional: main() for test
+int main() {
+    applyAccessory();
+    return 0;
+}
