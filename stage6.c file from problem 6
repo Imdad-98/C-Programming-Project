@@ -1,0 +1,334 @@
+/* stage6.c update for Problem 7: Bucket List Management */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_BUCKET_CONTENT 256
+#define INITIAL_CAPACITY 10
+#define QUEUE_CAPACITY 100
+
+/* Bucket struct */
+typedef struct {
+    int id;
+    char content[MAX_BUCKET_CONTENT];
+} Bucket;
+
+/* Dynamic array for bucket list */
+typedef struct {
+    Bucket* buckets;
+    int size;
+    int capacity;
+} BucketList;
+
+/* Circular queue for completed buckets */
+typedef struct {
+    Bucket queue[QUEUE_CAPACITY];
+    int front;
+    int rear;
+    int count;
+} CompletedQueue;
+
+/* Global variables */
+BucketList bucketList = {NULL, 0, 0};
+CompletedQueue completedQueue = {{0}, 0, 0, 0};
+
+/* Function prototypes */
+int loadBucketListFromFile(const char* filename, BucketList* list);
+void freeBucketList(BucketList* list);
+void printBucketList(const BucketList* list);
+void printCompletedQueue(const CompletedQueue* q);
+int enqueueCompletedBucket(CompletedQueue* q, Bucket* bucket);
+int dequeueCompletedBucket(CompletedQueue* q, Bucket* bucket);
+int removeBucketById(BucketList* list, int id);
+void makeBucketList(void);
+void searchBuckets(const BucketList* list);
+int linearSearch(const BucketList* list, const char* key, int* foundIndices, int maxFound);
+
+void clearInputBuffer(void);
+
+int main() {
+    // This main is for standalone testing
+    // In your actual stage6.c, integrate makeBucketList() in the menu system as instructed.
+    makeBucketList();
+    return 0;
+}
+
+/* Load bucket list from CSV file */
+int loadBucketListFromFile(const char* filename, BucketList* list) {
+    FILE* fp = fopen(filename, "r");
+    if (!fp) {
+        printf("Error: Cannot open file %s\n", filename);
+        return 0;
+    }
+
+    // Initialize dynamic array
+    list->buckets = (Bucket*)malloc(sizeof(Bucket) * INITIAL_CAPACITY);
+    if (!list->buckets) {
+        printf("Error: Memory allocation failed\n");
+        fclose(fp);
+        return 0;
+    }
+    list->capacity = INITIAL_CAPACITY;
+    list->size = 0;
+
+    char line[512];
+    while (fgets(line, sizeof(line), fp)) {
+        // Parse CSV line: ID,content
+        char* token = strtok(line, ",");
+        if (!token) continue;
+
+        int id = atoi(token);
+
+        token = strtok(NULL, "\n");
+        if (!token) continue;
+
+        // Expand array if needed
+        if (list->size >= list->capacity) {
+            int newCapacity = list->capacity * 2;
+            Bucket* newBuckets = (Bucket*)realloc(list->buckets, sizeof(Bucket) * newCapacity);
+            if (!newBuckets) {
+                printf("Error: Memory reallocation failed\n");
+                freeBucketList(list);
+                fclose(fp);
+                return 0;
+            }
+            list->buckets = newBuckets;
+            list->capacity = newCapacity;
+        }
+
+        list->buckets[list->size].id = id;
+        strncpy(list->buckets[list->size].content, token, MAX_BUCKET_CONTENT - 1);
+        list->buckets[list->size].content[MAX_BUCKET_CONTENT - 1] = '\0';
+        list->size++;
+    }
+
+    fclose(fp);
+    return 1;
+}
+
+/* Free dynamic array memory */
+void freeBucketList(BucketList* list) {
+    if (list->buckets) {
+        free(list->buckets);
+        list->buckets = NULL;
+    }
+    list->size = 0;
+    list->capacity = 0;
+}
+
+/* Print bucket list */
+void printBucketList(const BucketList* list) {
+    if (list->size == 0) {
+        printf("No remaining buckets.\n");
+        return;
+    }
+    printf("Remaining Buckets:\n");
+    printf("%-5s | %s\n", "ID", "Content");
+    printf("-------------------------------\n");
+    for (int i = 0; i < list->size; i++) {
+        printf("%-5d | %s\n", list->buckets[i].id, list->buckets[i].content);
+    }
+}
+
+/* Print completed queue */
+void printCompletedQueue(const CompletedQueue* q) {
+    if (q->count == 0) {
+        printf("No completed buckets.\n");
+        return;
+    }
+    printf("Completed Buckets:\n");
+    printf("%-5s | %s\n", "ID", "Content");
+    printf("-------------------------------\n");
+    int idx = q->front;
+    for (int i = 0; i < q->count; i++) {
+        printf("%-5d | %s\n", q->queue[idx].id, q->queue[idx].content);
+        idx = (idx + 1) % QUEUE_CAPACITY;
+    }
+}
+
+/* Enqueue completed bucket */
+int enqueueCompletedBucket(CompletedQueue* q, Bucket* bucket) {
+    if (q->count == QUEUE_CAPACITY) {
+        printf("Completed queue is full!\n");
+        return 0;
+    }
+    q->queue[q->rear] = *bucket;
+    q->rear = (q->rear + 1) % QUEUE_CAPACITY;
+    q->count++;
+    return 1;
+}
+
+/* Remove bucket by ID from bucket list */
+int removeBucketById(BucketList* list, int id) {
+    int foundIndex = -1;
+    for (int i = 0; i < list->size; i++) {
+        if (list->buckets[i].id == id) {
+            foundIndex = i;
+            break;
+        }
+    }
+    if (foundIndex == -1) return 0; // Not found
+
+    // Shift elements left to remove bucket
+    for (int i = foundIndex; i < list->size - 1; i++) {
+        list->buckets[i] = list->buckets[i + 1];
+    }
+    list->size--;
+    return 1;
+}
+
+/* Clear stdin buffer */
+void clearInputBuffer(void) {
+    int ch;
+    while ((ch = getchar()) != '\n' && ch != EOF);
+}
+
+/* Linear search for bucket by substring key (ID or content) */
+int linearSearch(const BucketList* list, const char* key, int* foundIndices, int maxFound) {
+    int foundCount = 0;
+    int keyId = atoi(key); // If numeric, try search by ID
+
+    for (int i = 0; i < list->size; i++) {
+        // Search by ID match or substring in content (case sensitive)
+        if ((keyId != 0 && list->buckets[i].id == keyId) || strstr(list->buckets[i].content, key) != NULL) {
+            if (foundCount < maxFound) {
+                foundIndices[foundCount] = i;
+            }
+            foundCount++;
+        }
+    }
+    return foundCount;
+}
+
+/* Search function with user input */
+void searchBuckets(const BucketList* list) {
+    if (list->size == 0) {
+        printf("Bucket list is empty.\n");
+        return;
+    }
+
+    char key[128];
+    printf("Enter Bucket ID or content substring to search: ");
+    if (fgets(key, sizeof(key), stdin) == NULL) return;
+    key[strcspn(key, "\n")] = '\0'; // remove newline
+
+    if (strlen(key) == 0) {
+        printf("Empty search key.\n");
+        return;
+    }
+
+    int foundIndices[100];
+    int foundCount = linearSearch(list, key, foundIndices, 100);
+
+    if (foundCount == 0) {
+        printf("No matching buckets found.\n");
+    } else {
+        printf("Found %d bucket(s):\n", foundCount);
+        printf("%-5s | %s\n", "ID", "Content");
+        printf("-------------------------------\n");
+        for (int i = 0; i < (foundCount > 100 ? 100 : foundCount); i++) {
+            Bucket b = list->buckets[foundIndices[i]];
+            printf("%-5d | %s\n", b.id, b.content);
+        }
+    }
+}
+
+/* Main function for bucket list management */
+void makeBucketList(void) {
+    // Load bucket list file
+    const char* filename = "bucketlist.csv";
+
+    if (!loadBucketListFromFile(filename, &bucketList)) {
+        printf("Failed to load bucket list.\n");
+        return;
+    }
+
+    printf("Bucket list loaded successfully. %d buckets available.\n", bucketList.size);
+
+    while (1) {
+        printf("\nBucket List Menu:\n");
+        printf("1. Show remaining buckets\n");
+        printf("2. Mark bucket(s) completed\n");
+        printf("3. Show completed buckets\n");
+        printf("4. Search buckets (bonus)\n");
+        printf("0. Exit\n");
+        printf("Select an option: ");
+
+        int choice = -1;
+        if (scanf("%d", &choice) != 1) {
+            printf("Invalid input. Try again.\n");
+            clearInputBuffer();
+            continue;
+        }
+        clearInputBuffer();
+
+        if (choice == 0) {
+            printf("Exiting bucket list manager.\n");
+            break;
+        }
+
+        if (choice == 1) {
+            printBucketList(&bucketList);
+        } else if (choice == 2) {
+            if (bucketList.size == 0) {
+                printf("All buckets completed!\n");
+                continue;
+            }
+            printBucketList(&bucketList);
+            printf("Enter bucket IDs to mark as completed (enter 0 to stop):\n");
+
+            while (1) {
+                printf("Bucket ID: ");
+                int id;
+                if (scanf("%d", &id) != 1) {
+                    printf("Invalid input.\n");
+                    clearInputBuffer();
+                    continue;
+                }
+                clearInputBuffer();
+
+                if (id == 0) break;
+
+                // Find bucket by ID
+                int foundIndex = -1;
+                for (int i = 0; i < bucketList.size; i++) {
+                    if (bucketList.buckets[i].id == id) {
+                        foundIndex = i;
+                        break;
+                    }
+                }
+                if (foundIndex == -1) {
+                    printf("Bucket ID %d not found.\n", id);
+                    continue;
+                }
+
+                // Enqueue completed bucket
+                if (!enqueueCompletedBucket(&completedQueue, &bucketList.buckets[foundIndex])) {
+                    printf("Failed to enqueue completed bucket.\n");
+                    break;
+                }
+
+                // Remove from bucket list
+                if (!removeBucketById(&bucketList, id)) {
+                    printf("Failed to remove bucket ID %d from list.\n", id);
+                } else {
+                    printf("Bucket ID %d marked as completed and removed.\n", id);
+                }
+
+                if (bucketList.size == 0) {
+                    printf("All buckets completed! Exiting marking.\n");
+                    break;
+                }
+            }
+        } else if (choice == 3) {
+            printCompletedQueue(&completedQueue);
+        } else if (choice == 4) {
+            searchBuckets(&bucketList);
+        } else {
+            printf("Invalid menu choice.\n");
+        }
+    }
+
+    freeBucketList(&bucketList);
+}
