@@ -1,0 +1,209 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_HAIRSTYLES 100
+#define NAME_LEN 50
+
+typedef struct {
+    char name[NAME_LEN];
+    char gender; // 'M' or 'F' or 'U' (unisex)
+} Hairstyle;
+
+typedef struct {
+    Hairstyle style;
+    int externalScore; // 50~100 random
+    int internalScore; // 50~100 random
+    double suitability;
+} Evaluation;
+
+// Global hairstyle list
+Hairstyle hairstyleList[MAX_HAIRSTYLES];
+int hairstyleCount = 0;
+
+// Function prototypes
+int loadHairstyles(const char *filename);
+int filterByGender(Hairstyle *filtered[], char gender);
+void quickSort(Evaluation arr[], int left, int right);
+int partition(Evaluation arr[], int left, int right);
+void swap(Evaluation *a, Evaluation *b);
+void bubbleSort(Evaluation arr[], int n);
+void insertionSort(Evaluation arr[], int n);
+void printEvaluations(Evaluation arr[], int n);
+void calculateSuitability(Evaluation *eval);
+
+int main() {
+    srand((unsigned int)time(NULL));
+
+    char gender;
+    int numToSelect;
+    int i;
+
+    if (!loadHairstyles("hair_style.txt")) {
+        fprintf(stderr, "Failed to load hairstyle data.\n");
+        return 1;
+    }
+
+    printf("Enter gender (M/F): ");
+    scanf(" %c", &gender);
+    gender = (gender == 'm') ? 'M' : (gender == 'f' ? 'F' : gender);
+
+    if (gender != 'M' && gender != 'F') {
+        printf("Invalid gender input.\n");
+        return 1;
+    }
+
+    Hairstyle *filtered[MAX_HAIRSTYLES];
+    int filteredCount = filterByGender(filtered, gender);
+    if (filteredCount == 0) {
+        printf("No hairstyles available for gender '%c'.\n", gender);
+        return 1;
+    }
+
+    do {
+        printf("Enter number of hairstyles to test (5~10): ");
+        scanf("%d", &numToSelect);
+    } while (numToSelect < 5 || numToSelect > 10);
+
+    if (numToSelect > filteredCount) {
+        printf("Not enough hairstyles to select %d. Selecting %d instead.\n", numToSelect, filteredCount);
+        numToSelect = filteredCount;
+    }
+
+    // Randomly select hairstyles
+    Evaluation evaluations[numToSelect];
+    int selectedIndices[MAX_HAIRSTYLES] = {0};
+    int selectedCount = 0;
+
+    while (selectedCount < numToSelect) {
+        int idx = rand() % filteredCount;
+        if (!selectedIndices[idx]) {
+            selectedIndices[idx] = 1;
+            evaluations[selectedCount].style = *filtered[idx];
+            // Generate random scores 50-100
+            evaluations[selectedCount].externalScore = 50 + rand() % 51;
+            evaluations[selectedCount].internalScore = 50 + rand() % 51;
+            calculateSuitability(&evaluations[selectedCount]);
+            selectedCount++;
+        }
+    }
+
+    // Ask sorting method
+    int sortMethod = 1; // Default quicksort
+    printf("Choose sorting method:\n");
+    printf("1. Quick Sort\n2. Bubble Sort\n3. Insertion Sort\n");
+    printf("Enter choice (1-3): ");
+    scanf("%d", &sortMethod);
+
+    switch (sortMethod) {
+        case 1:
+            quickSort(evaluations, 0, numToSelect - 1);
+            break;
+        case 2:
+            bubbleSort(evaluations, numToSelect);
+            break;
+        case 3:
+            insertionSort(evaluations, numToSelect);
+            break;
+        default:
+            printf("Invalid choice, using Quick Sort.\n");
+            quickSort(evaluations, 0, numToSelect - 1);
+    }
+
+    printEvaluations(evaluations, numToSelect);
+
+    return 0;
+}
+
+int loadHairstyles(const char *filename) {
+    FILE *fp = fopen(filename, "r");
+    if (!fp) return 0;
+
+    hairstyleCount = 0;
+    while (hairstyleCount < MAX_HAIRSTYLES &&
+           fscanf(fp, "%49[^,], %c\n", hairstyleList[hairstyleCount].name, &hairstyleList[hairstyleCount].gender) == 2) {
+        hairstyleCount++;
+    }
+
+    fclose(fp);
+    return 1;
+}
+
+int filterByGender(Hairstyle *filtered[], char gender) {
+    int count = 0;
+    for (int i = 0; i < hairstyleCount; i++) {
+        if (hairstyleList[i].gender == gender || hairstyleList[i].gender == 'U') {
+            filtered[count++] = &hairstyleList[i];
+        }
+    }
+    return count;
+}
+
+void calculateSuitability(Evaluation *eval) {
+    const double externalWeight = 0.7;
+    const double internalWeight = 0.3;
+    eval->suitability = (eval->externalScore * externalWeight) + (eval->internalScore * internalWeight);
+}
+
+void quickSort(Evaluation arr[], int left, int right) {
+    if (left < right) {
+        int pi = partition(arr, left, right);
+        quickSort(arr, left, pi - 1);
+        quickSort(arr, pi + 1, right);
+    }
+}
+
+int partition(Evaluation arr[], int left, int right) {
+    double pivot = arr[right].suitability;
+    int i = left - 1;
+    for (int j = left; j < right; j++) {
+        if (arr[j].suitability <= pivot) {
+            i++;
+            swap(&arr[i], &arr[j]);
+        }
+    }
+    swap(&arr[i + 1], &arr[right]);
+    return i + 1;
+}
+
+void swap(Evaluation *a, Evaluation *b) {
+    Evaluation temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void bubbleSort(Evaluation arr[], int n) {
+    for (int i = 0; i < n-1; i++) {
+        for (int j = 0; j < n - i -1; j++) {
+            if (arr[j].suitability > arr[j+1].suitability) {
+                swap(&arr[j], &arr[j+1]);
+            }
+        }
+    }
+}
+
+void insertionSort(Evaluation arr[], int n) {
+    for (int i = 1; i < n; i++) {
+        Evaluation key = arr[i];
+        int j = i - 1;
+        while (j >= 0 && arr[j].suitability > key.suitability) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
+    }
+}
+
+void printEvaluations(Evaluation arr[], int n) {
+    printf("\nHairstyle Evaluation Results:\n");
+    printf("Name\tExternal\tInternal\tSuitability\n");
+    printf("------------------------------------------------\n");
+    for (int i = 0; i < n; i++) {
+        printf("%-15s %8d %10d %12.2f\n",
+            arr[i].style.name,
+            arr[i].externalScore,
+            arr[i].internalScore,
+            arr[i].suitability);
+    }
+}
