@@ -1,0 +1,287 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_MALE_TYPES 6
+#define MAX_FEMALE_TYPES 7
+#define MAX_TYPES (MAX_MALE_TYPES + MAX_FEMALE_TYPES)
+#define MAX_NAME_LEN 50
+#define MAX_DESC_LEN 100
+#define QUEUE_SIZE 20
+
+typedef struct {
+    char gender;               // 'M' or 'F'
+    char typeName[MAX_NAME_LEN];
+    char description[MAX_DESC_LEN];
+} MakeupType;
+
+typedef struct {
+    int id;                    // Trainee ID
+    int arrivalTime;           // Arrival minute (0-59)
+    int makeupTypeIndex;       // index into makeup types array
+    int duration;              // 3-6 minutes duration of test
+} Trainee;
+
+typedef struct {
+    Trainee *queue[QUEUE_SIZE];
+    int front;
+    int rear;
+    int count;
+} CircularQueue;
+
+// Global arrays for makeup types
+MakeupType makeupTypes[MAX_TYPES];
+int totalMakeupTypes = 0;
+
+// Circular queue for trainees in makeup test room
+CircularQueue makeupQueue;
+
+// Function prototypes
+int loadMakeupTypes(const char *filename);
+void initQueue(CircularQueue *q);
+int isQueueFull(CircularQueue *q);
+int isQueueEmpty(CircularQueue *q);
+int enqueue(CircularQueue *q, Trainee *t);
+Trainee* dequeue(CircularQueue *q);
+void printQueueStatus(int currentTime);
+void freeQueue(CircularQueue *q);
+
+void testMakeUp(void);
+
+int main() {
+    // For demonstration, directly call testMakeUp.
+    testMakeUp();
+    return 0;
+}
+
+int loadMakeupTypes(const char *filename) {
+    FILE *fp = fopen(filename, "r");
+    if (!fp) {
+        fprintf(stderr, "Error: Cannot open makeup type file %s\n", filename);
+        return -1;
+    }
+
+    char line[256];
+    int count = 0;
+    while (fgets(line, sizeof(line), fp)) {
+        if (count >= MAX_TYPES) break;
+
+        char *token = strtok(line, ",");
+        if (!token) continue;
+
+        makeupTypes[count].gender = token[0];
+
+        token = strtok(NULL, ",");
+        if (!token) continue;
+        strncpy(makeupTypes[count].typeName, token, MAX_NAME_LEN);
+        makeupTypes[count].typeName[MAX_NAME_LEN-1] = '\0';
+
+        token = strtok(NULL, "\n");
+        if (!token) continue;
+        strncpy(makeupTypes[count].description, token, MAX_DESC_LEN);
+        makeupTypes[count].description[MAX_DESC_LEN-1] = '\0';
+
+        count++;
+    }
+    fclose(fp);
+
+    if (count != MAX_TYPES) {
+        fprintf(stderr, "Warning: Expected %d makeup types, loaded %d\n", MAX_TYPES, count);
+    }
+    totalMakeupTypes = count;
+    return count;
+}
+
+void initQueue(CircularQueue *q) {
+    q->front = 0;
+    q->rear = 0;
+    q->count = 0;
+    for(int i=0; i<QUEUE_SIZE; i++) {
+        q->queue[i] = NULL;
+    }
+}
+
+int isQueueFull(CircularQueue *q) {
+    return q->count == QUEUE_SIZE;
+}
+
+int isQueueEmpty(CircularQueue *q) {
+    return q->count == 0;
+}
+
+int enqueue(CircularQueue *q, Trainee *t) {
+    if (isQueueFull(q)) return 0;
+    q->queue[q->rear] = t;
+    q->rear = (q->rear + 1) % QUEUE_SIZE;
+    q->count++;
+    return 1;
+}
+
+Trainee* dequeue(CircularQueue *q) {
+    if (isQueueEmpty(q)) return NULL;
+    Trainee *t = q->queue[q->front];
+    q->queue[q->front] = NULL;
+    q->front = (q->front + 1) % QUEUE_SIZE;
+    q->count--;
+    return t;
+}
+
+void freeQueue(CircularQueue *q) {
+    while (!isQueueEmpty(q)) {
+        Trainee *t = dequeue(q);
+        free(t);
+    }
+}
+
+void printQueueStatus(int currentTime) {
+    printf("Time: %02d min\n", currentTime);
+    if (isQueueEmpty(&makeupQueue)) {
+        printf("Makeup test room is empty.\n");
+        return;
+    }
+
+    int idx = makeupQueue.front;
+    int cnt = makeupQueue.count;
+
+    int totalWaitMale = 0, totalWaitFemale = 0, totalWaitAll = 0;
+    int maleCount = 0, femaleCount = 0;
+
+    printf("ID\tGender\tMakeup Type\tDuration\tWait Time\n");
+    while (cnt--) {
+        Trainee *t = makeupQueue.queue[idx];
+        char gender = (t->id % 2) ? 'M' : 'F';
+        int waitTime = currentTime - t->arrivalTime;
+        if (waitTime < 0) waitTime = 0; // safety
+
+        printf("%d\t%c\t%s\t%d min\t%d min\n",
+            t->id, gender, makeupTypes[t->makeupTypeIndex].typeName,
+            t->duration, waitTime);
+
+        totalWaitAll += waitTime;
+        if (gender == 'M') {
+            totalWaitMale += waitTime;
+            maleCount++;
+        } else {
+            totalWaitFemale += waitTime;
+            femaleCount++;
+        }
+
+        idx = (idx + 1) % QUEUE_SIZE;
+    }
+
+    printf("\nWaiting time summary:\n");
+    printf("Male total waiting time: %d min (avg %.2f min)\n", totalWaitMale,
+           maleCount ? (double)totalWaitMale/maleCount : 0.0);
+    printf("Female total waiting time: %d min (avg %.2f min)\n", totalWaitFemale,
+           femaleCount ? (double)totalWaitFemale/femaleCount : 0.0);
+    printf("Overall total waiting time: %d min\n", totalWaitAll);
+}
+
+void testMakeUp(void) {
+    printf("===== Makeup Test Simulation =====\n");
+
+    if (loadMakeupTypes("makeup.txt") < 0) {
+        printf("Failed to load makeup types. Exiting.\n");
+        return;
+    }
+
+    initQueue(&makeupQueue);
+    srand((unsigned int)time(NULL));
+
+    int currentTime = 0;
+    int traineeID = 1;
+    int ongoingTimeLeft = 0;  // minutes left for current test
+    Trainee *currentTrainee = NULL;
+
+    for (currentTime = 0; currentTime < 60; currentTime++) {
+        // Decrease ongoing time
+        if (ongoingTimeLeft > 0) {
+            ongoingTimeLeft--;
+            if (ongoingTimeLeft == 0 && currentTrainee != NULL) {
+                // Current trainee finishes
+                printf("[Time %02d] Trainee %d finished makeup test (Type: %s)\n",
+                    currentTime, currentTrainee->id, makeupTypes[currentTrainee->makeupTypeIndex].typeName);
+                free(currentTrainee);
+                currentTrainee = NULL;
+            }
+        }
+
+        // Randomly add new trainee if queue not full and no ongoing test or ongoing test occupies time
+        int r = rand() % 11; // 0 ~ 10
+        if (r < 3 && !isQueueFull(&makeupQueue)) {
+            // New trainee arrives
+            Trainee *newTrainee = (Trainee *)malloc(sizeof(Trainee));
+            if (!newTrainee) {
+                fprintf(stderr, "Memory allocation failed\n");
+                break;
+            }
+            newTrainee->id = traineeID++;
+            newTrainee->arrivalTime = currentTime;
+
+            // Odd ID: Male, Even ID: Female
+            char gender = (newTrainee->id % 2) ? 'M' : 'F';
+
+            // Random makeup type of corresponding gender
+            int startIndex = 0, endIndex = 0;
+            if (gender == 'M') {
+                startIndex = 0;
+                endIndex = MAX_MALE_TYPES - 1;
+            } else {
+                startIndex = MAX_MALE_TYPES;
+                endIndex = MAX_TYPES - 1;
+            }
+
+            int makeupIndex = startIndex + rand() % (endIndex - startIndex + 1);
+            newTrainee->makeupTypeIndex = makeupIndex;
+
+            // Random duration 3~6 minutes
+            newTrainee->duration = 3 + rand() % 4;
+
+            if (ongoingTimeLeft == 0) {
+                // No ongoing test, start immediately
+                ongoingTimeLeft = newTrainee->duration;
+                currentTrainee = newTrainee;
+                printf("[Time %02d] Trainee %d (Gender %c) started makeup test: %s (%d min)\n",
+                    currentTime, newTrainee->id, gender,
+                    makeupTypes[makeupIndex].typeName, newTrainee->duration);
+            } else {
+                // Ongoing test, enqueue
+                if (!enqueue(&makeupQueue, newTrainee)) {
+                    printf("[Time %02d] Queue full, trainee %d cannot enter test room.\n", currentTime, newTrainee->id);
+                    free(newTrainee);
+                } else {
+                    printf("[Time %02d] Trainee %d (Gender %c) entered waiting queue for makeup test: %s (%d min)\n",
+                        currentTime, newTrainee->id, gender,
+                        makeupTypes[makeupIndex].typeName, newTrainee->duration);
+                }
+            }
+        }
+
+        // If no ongoing test, start next trainee in queue if exists
+        if (ongoingTimeLeft == 0 && !isQueueEmpty(&makeupQueue)) {
+            currentTrainee = dequeue(&makeupQueue);
+            ongoingTimeLeft = currentTrainee->duration;
+            char gender = (currentTrainee->id % 2) ? 'M' : 'F';
+            printf("[Time %02d] Trainee %d (Gender %c) started makeup test: %s (%d min)\n",
+                currentTime, currentTrainee->id, gender,
+                makeupTypes[currentTrainee->makeupTypeIndex].typeName, currentTrainee->duration);
+        }
+
+        // Print status every 5 minutes
+        if (currentTime % 5 == 0) {
+            printf("\n--- Status at minute %02d ---\n", currentTime);
+            printQueueStatus(currentTime);
+            printf("---------------------------\n\n");
+        }
+    }
+
+    // End of simulation: free all allocated trainees still in queue
+    if (currentTrainee != NULL) {
+        free(currentTrainee);
+        currentTrainee = NULL;
+    }
+    freeQueue(&makeupQueue);
+
+    printf("===== Makeup Test Simulation Finished =====\n");
+}
