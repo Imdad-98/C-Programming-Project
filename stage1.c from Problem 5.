@@ -1,0 +1,167 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX 7
+
+typedef struct {
+    char food[50];
+    int calorie;
+} Food;
+
+typedef struct {
+    Food items[MAX];
+    int front;
+    int rear;
+    int count;
+} FoodQueue;
+
+void initQueue(FoodQueue* q) {
+    q->front = 0;
+    q->rear = -1;
+    q->count = 0;
+}
+
+int isFull(FoodQueue* q) {
+    return q->count == MAX;
+}
+
+int isEmpty(FoodQueue* q) {
+    return q->count == 0;
+}
+
+void enqueue(FoodQueue* q, char* food, int cal) {
+    if (isFull(q)) {
+        printf("Queue is full.\n");
+        return;
+    }
+    q->rear = (q->rear + 1) % MAX;
+    strcpy(q->items[q->rear].food, food);
+    q->items[q->rear].calorie = cal;
+    q->count++;
+}
+
+Food dequeue(FoodQueue* q) {
+    Food f = {"", -1};
+    if (isEmpty(q)) {
+        printf("Queue is empty.\n");
+        return f;
+    }
+    f = q->items[q->front];
+    q->front = (q->front + 1) % MAX;
+    q->count--;
+    return f;
+}
+
+int totalCalories(FoodQueue* q) {
+    int sum = 0;
+    for (int i = 0; i < q->count; i++) {
+        int index = (q->front + i) % MAX;
+        sum += q->items[index].calorie;
+    }
+    return sum;
+}
+
+void printQueue(FoodQueue* q) {
+    printf("Current food log:\n");
+    for (int i = 0; i < q->count; i++) {
+        int idx = (q->front + i) % MAX;
+        printf(" - %s (%d kcal)\n", q->items[idx].food, q->items[idx].calorie);
+    }
+    printf("Total remaining calories: %d kcal\n", totalCalories(q));
+}
+
+// Exercise calories
+int getExerciseCalories(int type) {
+    switch (type) {
+        case 1: return 200;
+        case 2: return 250;
+        case 3: return 300;
+        case 4: return 150;
+        case 5: return 250;
+        case 6: return 300;
+        case 7: return 100;
+        default: return 0;
+    }
+}
+
+void mngMyDailyCalorie(FoodQueue* q) {
+    if (isEmpty(q)) {
+        printf("No food log to manage.\n");
+        return;
+    }
+
+    printf("Select your exercise type (1-7): ");
+    int choice;
+    scanf("%d", &choice);
+
+    int burned = getExerciseCalories(choice);
+    if (burned == 0) {
+        printf("Invalid exercise type.\n");
+        return;
+    }
+
+    Food frontItem = q->items[q->front];
+    if (burned >= frontItem.calorie) {
+        printf("Removed '%s' (%d kcal) from log using %d kcal exercise.\n",
+               frontItem.food, frontItem.calorie, burned);
+        dequeue(q);
+    } else {
+        printf("Exercise insufficient. You need %d more kcal to remove '%s'.\n",
+               frontItem.calorie - burned, frontItem.food);
+    }
+
+    printQueue(q);
+}
+
+void setMyDailyFood(FoodQueue* q) {
+    int total = 0;
+    while (!isFull(q) && total < 1500) {
+        char food[50];
+        int cal;
+
+        printf("Enter food name (or 'stop' to finish): ");
+        scanf("%s", food);
+        if (strcmp(food, "stop") == 0) break;
+
+        printf("Enter calorie (100,150,200,250,300): ");
+        scanf("%d", &cal);
+        if (cal != 100 && cal != 150 && cal != 200 && cal != 250 && cal != 300) {
+            printf("Invalid calorie.\n");
+            continue;
+        }
+
+        if (total + cal > 1500) {
+            printf("Total calories would exceed 1500. Stopping input.\n");
+            break;
+        }
+
+        enqueue(q, food, cal);
+        total += cal;
+    }
+
+    printQueue(q);
+}
+
+// Sample menu
+int main() {
+    FoodQueue myQueue;
+    initQueue(&myQueue);
+
+    int menu;
+    while (1) {
+        printf("\n--- Calorie System ---\n");
+        printf("1. Record Food\n");
+        printf("2. Manage Calorie by Exercise\n");
+        printf("0. Exit\n");
+        printf("Select: ");
+        scanf("%d", &menu);
+
+        switch (menu) {
+            case 1: setMyDailyFood(&myQueue); break;
+            case 2: mngMyDailyCalorie(&myQueue); break;
+            case 0: return 0;
+            default: printf("Invalid menu.\n");
+        }
+    }
+}
