@@ -1,0 +1,125 @@
+#include <stdio.h>
+#include <string.h>
+
+#define MAX_ITEMS 7
+#define MAX_NAME_LEN 50
+
+// Allowed calorie values
+const int allowedCalories[] = {100, 150, 200, 250, 300};
+
+// Food item structure
+typedef struct {
+    char name[MAX_NAME_LEN];
+    int calories;
+} FoodItem;
+
+// Stack structure
+typedef struct {
+    FoodItem items[MAX_ITEMS];
+    int top;
+} FoodStack;
+
+// Initialize stack
+void initStack(FoodStack* s) {
+    s->top = -1;
+}
+
+// Check if stack is full
+int isFull(FoodStack* s) {
+    return s->top >= MAX_ITEMS - 1;
+}
+
+// Push item onto stack
+int push(FoodStack* s, FoodItem item) {
+    if (isFull(s)) return 0;
+    s->items[++(s->top)] = item;
+    return 1;
+}
+
+// Check if a calorie value is allowed
+int isValidCalorie(int cal) {
+    for (int i = 0; i < 5; i++) {
+        if (allowedCalories[i] == cal) return 1;
+    }
+    return 0;
+}
+
+// Display all food items in stack
+void displayStack(FoodStack* s) {
+    printf("\n=== 오늘의 식단 기록 ===\n");
+    for (int i = 0; i <= s->top; i++) {
+        printf("%d. %s - %d kcal\n", i + 1, s->items[i].name, s->items[i].calories);
+    }
+}
+
+// Function to input and store food items
+int setMyDailyFood() {
+    FoodStack stack;
+    initStack(&stack);
+    int totalCalories = 0;
+
+    printf("\n[ 식단 기록 시작 - 최대 7개 항목 / 1500 kcal 이하 ]\n");
+
+    while (!isFull(&stack)) {
+        FoodItem item;
+        int cal;
+
+        printf("\n음식 이름 입력 (띄어쓰기 없이): ");
+        scanf("%s", item.name);
+
+        printf("칼로리 입력 (100/150/200/250/300 중 택1): ");
+        scanf("%d", &cal);
+
+        if (!isValidCalorie(cal)) {
+            printf("❌ 허용되지 않는 칼로리 값입니다.\n");
+            continue;
+        }
+
+        if (totalCalories + cal > 1500) {
+            printf("⚠️ 총 칼로리가 1500을 초과합니다. 입력 종료.\n");
+            break;
+        }
+
+        item.calories = cal;
+
+        if (push(&stack, item)) {
+            totalCalories += cal;
+            printf("✅ 저장됨: %s (%d kcal)\n", item.name, cal);
+        } else {
+            printf("❌ 스택이 가득 찼습니다.\n");
+            break;
+        }
+    }
+
+    displayStack(&stack);
+    printf("🔢 오늘 섭취한 총 칼로리: %d kcal\n", totalCalories);
+    return totalCalories;
+}
+
+// Example of a simplified menu
+void showMenu() {
+    int option;
+    while (1) {
+        printf("\n===== 밀리웨이즈 훈련 시스템 =====\n");
+        printf("1. [II. 훈련 > 1. 체력과 지식 > G. 식단 기록]\n");
+        printf("0. 종료\n");
+        printf("선택: ");
+        scanf("%d", &option);
+
+        switch (option) {
+            case 1:
+                setMyDailyFood();
+                break;
+            case 0:
+                printf("프로그램을 종료합니다.\n");
+                return;
+            default:
+                printf("잘못된 선택입니다.\n");
+        }
+    }
+}
+
+int main() {
+    showMenu();
+    return 0;
+}
