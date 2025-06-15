@@ -1,0 +1,203 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+#define MAX_STUDENTS 100
+#define SUBJECTS 5
+
+typedef struct {
+    char name[50];
+    char nickname[50];
+    int age;
+    char gender[10];
+    int grade;
+} Student;
+
+typedef struct {
+    char nickname[50];
+    float subjectScore[SUBJECTS]; // 영어, 수학, 한국어, 사회, 과학
+    float weights[SUBJECTS];
+    float avg;
+} SubjectGrade;
+
+Student students[MAX_STUDENTS];
+SubjectGrade grades[MAX_STUDENTS];
+int studentCount = 0;
+
+const char *subjectNames[SUBJECTS] = {"English", "Math", "Korean", "Social", "Science"};
+
+void inputCommonLearningInfo() {
+    printf("Enter number of students: ");
+    scanf("%d", &studentCount);
+
+    for (int i = 0; i < studentCount; i++) {
+        printf("\nStudent %d\n", i + 1);
+        printf("Name: "); scanf("%s", students[i].name);
+        printf("Nickname: "); scanf("%s", students[i].nickname);
+        printf("Age: "); scanf("%d", &students[i].age);
+        printf("Gender: "); scanf("%s", students[i].gender);
+        students[i].grade = students[i].age - 6;
+
+        strcpy(grades[i].nickname, students[i].nickname);
+
+        float weightSum = 0;
+        for (int j = 0; j < SUBJECTS; j++) {
+            printf("%s score: ", subjectNames[j]);
+            scanf("%f", &grades[i].subjectScore[j]);
+            printf("%s weight: ", subjectNames[j]);
+            scanf("%f", &grades[i].weights[j]);
+            weightSum += grades[i].weights[j];
+        }
+
+        if (weightSum != 1.0f) {
+            printf("Invalid weights. Total must be 1.0. Please re-enter this student.\n");
+            i--;
+            continue;
+        }
+
+        float weightedSum = 0;
+        for (int j = 0; j < SUBJECTS; j++) {
+            weightedSum += grades[i].subjectScore[j] * grades[i].weights[j];
+        }
+        grades[i].avg = (float)((int)(weightedSum * 10 + 0.5)) / 10.0;
+    }
+}
+
+void printStudentInfo() {
+    for (int i = 0; i < studentCount - 1; i++) {
+        for (int j = i + 1; j < studentCount; j++) {
+            if (strcmp(students[i].nickname, students[j].nickname) < 0) {
+                Student temp = students[i];
+                students[i] = students[j];
+                students[j] = temp;
+            }
+        }
+    }
+
+    printf("\n[Student Info - Descending by Nickname]\n");
+    for (int i = 0; i < studentCount; i++) {
+        printf("Name: %s, Nickname: %s, Age: %d, Gender: %s, Grade: %d\n",
+               students[i].name, students[i].nickname, students[i].age, students[i].gender, students[i].grade);
+    }
+}
+
+void printAscendAvgGrade() {
+    for (int i = 0; i < studentCount - 1; i++) {
+        for (int j = i + 1; j < studentCount; j++) {
+            if (grades[i].avg > grades[j].avg) {
+                SubjectGrade temp = grades[i];
+                grades[i] = grades[j];
+                grades[j] = temp;
+            }
+        }
+    }
+
+    printf("\n[Avg Grade - Ascending]\n");
+    for (int i = 0; i < studentCount; i++) {
+        printf("Nickname: %s, Avg: %.1f\n", grades[i].nickname, grades[i].avg);
+    }
+}
+
+void printDescendHighWeightGrade() {
+    printf("\nSelect subject index (0:English, 1:Math, 2:Korean, 3:Social, 4:Science): ");
+    int idx;
+    scanf("%d", &idx);
+
+    for (int i = 0; i < studentCount - 1; i++) {
+        for (int j = i + 1; j < studentCount; j++) {
+            if (grades[i].weights[idx] * grades[i].subjectScore[idx] <
+                grades[j].weights[idx] * grades[j].subjectScore[idx]) {
+                SubjectGrade temp = grades[i];
+                grades[i] = grades[j];
+                grades[j] = temp;
+            }
+        }
+    }
+
+    printf("\n[Subject Grade * Weight Descending - %s]\n", subjectNames[idx]);
+    for (int i = 0; i < studentCount; i++) {
+        printf("Nickname: %s, Score: %.1f, Weight: %.2f\n",
+               grades[i].nickname, grades[i].subjectScore[idx], grades[i].weights[idx]);
+    }
+}
+
+void printExcludeMaxMinGrade() {
+    printf("\nSelect subject index (0:English, 1:Math, 2:Korean, 3:Social, 4:Science): ");
+    int idx;
+    scanf("%d", &idx);
+
+    float max = grades[0].subjectScore[idx], min = grades[0].subjectScore[idx];
+    for (int i = 1; i < studentCount; i++) {
+        if (grades[i].subjectScore[idx] > max) max = grades[i].subjectScore[idx];
+        if (grades[i].subjectScore[idx] < min) min = grades[i].subjectScore[idx];
+    }
+
+    printf("\n[%s - Excluding Max (%.1f) and Min (%.1f)]\n", subjectNames[idx], max, min);
+    for (int i = 0; i < studentCount; i++) {
+        float s = grades[i].subjectScore[idx];
+        if (s != max && s != min) {
+            printf("Nickname: %s, Score: %.1f\n", grades[i].nickname, s);
+        }
+    }
+}
+
+// Bonus - Name to ASCII
+void obfuscateName(char *name) {
+    while (*name) {
+        printf("%d ", *name);
+        name++;
+    }
+}
+
+// Bonus - Nickname reverse
+void obfuscateNickname(char *nickname) {
+    int len = strlen(nickname);
+    for (int i = len - 1; i >= 0; i--) {
+        putchar(nickname[i]);
+    }
+    putchar('\n');
+}
+
+void showObfuscatedInfo() {
+    printf("\n[Obfuscated Name and Nickname]\n");
+    for (int i = 0; i < studentCount; i++) {
+        printf("Name ASCII: ");
+        obfuscateName(students[i].name);
+        printf("\nNickname Reversed: ");
+        obfuscateNickname(students[i].nickname);
+        printf("\n");
+    }
+}
+
+void menu() {
+    int choice;
+    do {
+        printf("\n==== Common Education Menu ====\n");
+        printf("1. Input Common Learning Info\n");
+        printf("2. Print Student Info (Nickname Desc)\n");
+        printf("3. Print Avg Grade Ascending\n");
+        printf("4. Print Weighted Subject Descending\n");
+        printf("5. Print Subject Excluding Max/Min\n");
+        printf("6. Obfuscate Student Info\n");
+        printf("0. Exit\n");
+        printf("Select: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: inputCommonLearningInfo(); break;
+            case 2: printStudentInfo(); break;
+            case 3: printAscendAvgGrade(); break;
+            case 4: printDescendHighWeightGrade(); break;
+            case 5: printExcludeMaxMinGrade(); break;
+            case 6: showObfuscatedInfo(); break;
+            case 0: printf("Bye.\n"); break;
+            default: printf("Invalid.\n");
+        }
+    } while (choice != 0);
+}
+
+int main() {
+    menu();
+    return 0;
+}
