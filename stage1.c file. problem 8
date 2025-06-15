@@ -1,0 +1,137 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_WORDS 10
+#define MAX_WORD_LEN 6
+#define STORY_LEN_MIN 90
+#define STORY_LEN_MAX 100
+
+char wordbook[MAX_WORDS][MAX_WORD_LEN];
+int wordCount = 0;
+
+void inputWords() {
+    char temp[MAX_WORD_LEN];
+    printf("Enter up to 10 words (each 3-5 letters long):\n");
+    for (int i = 0; i < MAX_WORDS; i++) {
+        printf("Word %d: ", i + 1);
+        scanf("%5s", temp);
+        int len = strlen(temp);
+        if (len < 3 || len > 5) {
+            printf("Word must be 3-5 characters. Try again.\n");
+            i--;
+        } else {
+            strcpy(wordbook[wordCount++], temp);
+        }
+    }
+}
+
+void selectRandomWords(char selected[5][MAX_WORD_LEN], char prev[5][MAX_WORD_LEN], int enforceBonus) {
+    int used[MAX_WORDS] = {0};
+    int count = 0;
+    while (1) {
+        count = 0;
+        while (count < 5) {
+            int idx = rand() % wordCount;
+            if (!used[idx]) {
+                used[idx] = 1;
+                strcpy(selected[count], wordbook[idx]);
+                count++;
+            }
+        }
+        if (enforceBonus && prev != NULL) {
+            int dup = 0;
+            for (int i = 0; i < 5; i++) {
+                for (int j = 0; j < 5; j++) {
+                    if (strcmp(selected[i], prev[j]) == 0) dup++;
+                }
+            }
+            if (dup <= 1) break;
+        } else {
+            break;
+        }
+        memset(used, 0, sizeof(used));
+    }
+}
+
+void writeRandomSentence() {
+    if (wordCount < 10) {
+        printf("Please enter 10 words first.\n");
+        return;
+    }
+
+    char choice;
+    char selected1[5][MAX_WORD_LEN];
+    char selected2[5][MAX_WORD_LEN];
+
+    selectRandomWords(selected1, NULL, 0);
+    printf("Suggested words: ");
+    for (int i = 0; i < 5; i++) printf("%s ", selected1[i]);
+    printf("\n");
+
+    printf("Do you want a new set? (y/n): ");
+    scanf(" %c", &choice);
+    if (choice == 'y') {
+        selectRandomWords(selected2, selected1, 1);
+        printf("New suggested words: ");
+        for (int i = 0; i < 5; i++) printf("%s ", selected2[i]);
+        printf("\n");
+    }
+
+    char story[200];
+    getchar(); // clear newline
+    while (1) {
+        printf("Write a story using the 5 words (90-100 characters):\n");
+        fgets(story, sizeof(story), stdin);
+        int len = strlen(story);
+        if (story[len-1] == '\n') story[len-1] = '\0';
+        len = strlen(story);
+        if (len >= STORY_LEN_MIN && len <= STORY_LEN_MAX) break;
+        printf("Your story must be 90-100 characters long.\n");
+    }
+
+    char (*finalWords)[MAX_WORD_LEN] = (choice == 'y') ? selected2 : selected1;
+    int wordUsed[5] = {0}, totalWords = 0;
+    char *token = strtok(story, " ,.!?\"\n");
+
+    while (token != NULL) {
+        totalWords++;
+        for (int i = 0; i < 5; i++) {
+            if (strcmp(token, finalWords[i]) == 0) {
+                wordUsed[i]++;
+            }
+        }
+        token = strtok(NULL, " ,.!?\"\n");
+    }
+
+    printf("Word count: %d\n", totalWords);
+    printf("Character count: %ld\n", strlen(story));
+    for (int i = 0; i < 5; i++) {
+        printf("Word '%s' used %d time(s)\n", finalWords[i], wordUsed[i]);
+    }
+}
+
+void showMenu() {
+    int choice;
+    do {
+        printf("\n[II. Training > 1. Stamina and Knowledge > M. Creative Writing]\n");
+        printf("1. Input 10 words\n");
+        printf("2. Start creative writing\n");
+        printf("0. Exit\n");
+        printf("Enter choice: ");
+        scanf("%d", &choice);
+        switch (choice) {
+            case 1: inputWords(); break;
+            case 2: writeRandomSentence(); break;
+            case 0: printf("Goodbye!\n"); break;
+            default: printf("Invalid choice.\n"); break;
+        }
+    } while (choice != 0);
+}
+
+int main() {
+    srand((unsigned int)time(NULL));
+    showMenu();
+    return 0;
+}
