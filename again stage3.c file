@@ -1,0 +1,147 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_MEMBERS 5
+#define MAX_SENTENCES 10
+#define MAX_NAME_LENGTH 50
+#define MAX_SENTENCE_LENGTH 100
+#define MAX_ENG_TRANSLATION_LENGTH 100
+
+// Structure to store Korean sentences and their English transcription
+typedef struct {
+    char korean[MAX_SENTENCE_LENGTH];
+    char english[MAX_ENG_TRANSLATION_LENGTH];
+    char enteredBy[MAX_NAME_LENGTH];  // Name of the person who entered this sentence
+} KoreanSentence;
+
+// Structure to store the evaluation results of the dictation test
+typedef struct {
+    char groupName[MAX_NAME_LENGTH];
+    char memberName[MAX_NAME_LENGTH];
+    int score;  // Total score
+    int maxMatchRatio;  // Maximum matching ratio
+    int minMatchRatio;  // Minimum matching ratio
+} EvaluationResult;
+
+// Array to store the Korean sentences
+KoreanSentence sentences[MAX_SENTENCES];
+
+// Array to store the evaluation results
+EvaluationResult evaluations[MAX_MEMBERS];
+
+// Function prototypes
+void inputKoreanSentences();
+void playGame();
+void evalAnswer(int *totalScore, int *maxMatchRatio, int *minMatchRatio);
+void evalWordMatchingRatio(char *koreanSentence, char *inputSentence, int *correctWords, int *totalWords);
+void sortResults(int sortBy, int order);
+void doDictation();
+
+// Function to input 5 Korean sentences
+void inputKoreanSentences() {
+    int sentenceCount = 5;
+
+    if (sentenceCount >= MAX_SENTENCES) {
+        printf("The sentences are already full.\n");
+        return;
+    }
+
+    for (int i = sentenceCount; i < MAX_SENTENCES; i++) {
+        printf("Enter the Korean sentence: ");
+        getchar();
+        fgets(sentences[i].korean, MAX_SENTENCE_LENGTH, stdin);
+        sentences[i].korean[strcspn(sentences[i].korean, "\n")] = 0;  // Remove trailing newline
+
+        printf("Enter the English transcription: ");
+        fgets(sentences[i].english, MAX_ENG_TRANSLATION_LENGTH, stdin);
+        sentences[i].english[strcspn(sentences[i].english, "\n")] = 0;  // Remove trailing newline
+
+        printf("Enter the name of the person entering this sentence: ");
+        fgets(sentences[i].enteredBy, MAX_NAME_LENGTH, stdin);
+        sentences[i].enteredBy[strcspn(sentences[i].enteredBy, "\n")] = 0;  // Remove trailing newline
+
+        sentenceCount++;
+    }
+}
+
+// Function to evaluate and calculate the total score, max and min matching ratios
+void evalAnswer(int *totalScore, int *maxMatchRatio, int *minMatchRatio) {
+    int correctAnswers = 0;
+    for (int i = 0; i < MAX_SENTENCES; i++) {
+        printf("Korean Sentence: %s\n", sentences[i].korean);
+        printf("Enter the corresponding sentence in Korean: ");
+        char inputSentence[MAX_SENTENCE_LENGTH];
+        fgets(inputSentence, MAX_SENTENCE_LENGTH, stdin);
+        inputSentence[strcspn(inputSentence, "\n")] = 0;  // Remove trailing newline
+
+        int correctWords = 0, totalWords = 0;
+        evalWordMatchingRatio(sentences[i].korean, inputSentence, &correctWords, &totalWords);
+
+        correctAnswers += correctWords;
+        *totalScore += correctAnswers * 2;  // 2 points for each correct sentence
+        *maxMatchRatio = (correctWords > *maxMatchRatio) ? correctWords : *maxMatchRatio;
+        *minMatchRatio = (correctWords < *minMatchRatio) ? correctWords : *minMatchRatio;
+    }
+}
+
+// Function to calculate word matching ratio
+void evalWordMatchingRatio(char *koreanSentence, char *inputSentence, int *correctWords, int *totalWords) {
+    char *token = strtok(koreanSentence, " ");
+    while (token != NULL) {
+        (*totalWords)++;
+        if (strstr(inputSentence, token) != NULL) {
+            (*correctWords)++;
+        }
+        token = strtok(NULL, " ");
+    }
+}
+
+// Function to sort the results by specific criteria
+void sortResults(int sortBy, int order) {
+    // Sorting logic here
+}
+
+// Function to handle dictation test flow
+void doDictation() {
+    inputKoreanSentences();  // Input the Korean sentences
+
+    // Select a participant and run the test
+    playGame();  
+}
+
+// Function to simulate the dictation game
+void playGame() {
+    for (int i = 0; i < MAX_MEMBERS; i++) {
+        printf("\nTesting member %d...\n", i + 1);
+        int totalScore = 0, maxMatchRatio = 0, minMatchRatio = 100;
+        evalAnswer(&totalScore, &maxMatchRatio, &minMatchRatio);
+
+        printf("Total score: %d\n", totalScore);
+        printf("Max matching ratio: %d\n", maxMatchRatio);
+        printf("Min matching ratio: %d\n", minMatchRatio);
+
+        // Save the result for the member
+        strcpy(evaluations[i].groupName, "MillieWays");
+        strcpy(evaluations[i].memberName, "Member");
+        evaluations[i].score = totalScore;
+        evaluations[i].maxMatchRatio = maxMatchRatio;
+        evaluations[i].minMatchRatio = minMatchRatio;
+    }
+
+    // Print results
+    for (int i = 0; i < MAX_MEMBERS; i++) {
+        printf("Group: %s, Member: %s, Score: %d, Max Matching Ratio: %d, Min Matching Ratio: %d\n",
+            evaluations[i].groupName, evaluations[i].memberName, evaluations[i].score,
+            evaluations[i].maxMatchRatio, evaluations[i].minMatchRatio);
+    }
+}
+
+int main() {
+    srand(time(NULL));  // Initialize random number generator
+
+    doDictation();  // Start the dictation game
+
+    return 0;
+}
