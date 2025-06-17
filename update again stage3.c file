@@ -1,0 +1,194 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_MEMBERS 5
+#define MAX_NAME_LENGTH 50
+#define MAX_SCORE 300
+#define MIN_SCORE 0
+#define MAX_TIME_PER_PERSON 30
+#define MIN_TIME_PER_PERSON 10
+
+// Structure for storing member data
+typedef struct {
+    char groupName[MAX_NAME_LENGTH];
+    char memberName[MAX_NAME_LENGTH];
+    int score;  // Score for the task
+    int passingScore;  // Score needed to pass
+    int courseTime;  // Time spent on the course (in minutes)
+} Member;
+
+// Structure for storing team performance
+typedef struct {
+    char teamName[MAX_NAME_LENGTH];
+    int teamAvgScore;  // Average score of the team
+    int minScore;  // Minimum score of the team members
+    int teamCompletionTime;  // Total time taken for course completion by all members
+    char finalResult[10];  // Final result (Pass/Fail)
+} TeamPerformance;
+
+// Array to store members
+Member members[MAX_MEMBERS];
+
+// Array to store team performance
+TeamPerformance teamPerformance;
+
+// Function prototypes
+void inputBaseLine();
+void evalTeamPerformance();
+void displayResults();
+void learnHangul();
+void learnKoreanGrammar();
+void setCompletionTime(int numOfMembers);
+void setTeamPassingCriteria(int teamAvgScore, int minScore, int completionTime);
+void sortResults();
+
+// Function to input team passing criteria
+void inputBaseLine() {
+    int teamAvgScore, minScore, completionTime;
+    
+    printf("Enter the team average score (out of 300): ");
+    scanf("%d", &teamAvgScore);
+    printf("Enter the minimum score of team members (out of 100): ");
+    scanf("%d", &minScore);
+    
+    // Set completion time for team (based on number of members)
+    printf("Enter the total completion time (in minutes) for all team members: ");
+    scanf("%d", &completionTime);
+    
+    // Set the baseline for the team performance
+    setTeamPassingCriteria(teamAvgScore, minScore, completionTime);
+}
+
+// Function to set team passing criteria
+void setTeamPassingCriteria(int teamAvgScore, int minScore, int completionTime) {
+    if (teamAvgScore <= MAX_SCORE && minScore <= MAX_SCORE && completionTime >= MIN_TIME_PER_PERSON && completionTime <= MAX_TIME_PER_PERSON) {
+        printf("Team passing criteria have been set successfully.\n");
+    } else {
+        printf("Invalid team passing criteria.\n");
+    }
+}
+
+// Function to evaluate team performance
+void evalTeamPerformance() {
+    int totalScore = 0, totalTime = 0, minMemberScore = 100, maxMemberScore = 0;
+    
+    for (int i = 0; i < MAX_MEMBERS; i++) {
+        totalScore += members[i].score;
+        totalTime += members[i].courseTime;
+        
+        if (members[i].score < minMemberScore) {
+            minMemberScore = members[i].score;
+        }
+        if (members[i].score > maxMemberScore) {
+            maxMemberScore = members[i].score;
+        }
+    }
+    
+    // Set the team performance values
+    teamPerformance.teamAvgScore = totalScore / MAX_MEMBERS;
+    teamPerformance.minScore = minMemberScore;
+    teamPerformance.teamCompletionTime = totalTime;
+    
+    // Determine if the team passes or fails
+    if (teamPerformance.teamAvgScore >= 90 && teamPerformance.minScore >= 70) {
+        strcpy(teamPerformance.finalResult, "Pass");
+    } else {
+        strcpy(teamPerformance.finalResult, "Fail");
+    }
+    
+    displayResults();
+}
+
+// Function to display the results
+void displayResults() {
+    printf("\nTeam Performance:\n");
+    printf("Team Name: %s\n", teamPerformance.teamName);
+    printf("Team Average Score: %d\n", teamPerformance.teamAvgScore);
+    printf("Minimum Score of Team Members: %d\n", teamPerformance.minScore);
+    printf("Team Completion Time: %d minutes\n", teamPerformance.teamCompletionTime);
+    printf("Final Result: %s\n", teamPerformance.finalResult);
+}
+
+// Function to simulate the "Hangul Learning"
+void learnHangul() {
+    printf("\nHangul Learning - Enter your name and team name:\n");
+    printf("Enter Learner's Name: ");
+    char learnerName[MAX_NAME_LENGTH];
+    scanf("%s", learnerName);
+    
+    printf("Enter Team Name: ");
+    char teamName[MAX_NAME_LENGTH];
+    scanf("%s", teamName);
+    
+    // Set baseline values for Hangul learning
+    inputBaseLine();
+    
+    // After baseline, simulate the course time and score
+    setCompletionTime(MAX_MEMBERS);
+    
+    evalTeamPerformance();
+}
+
+// Function to simulate the "Korean Grammar Learning"
+void learnKoreanGrammar() {
+    printf("\nKorean Grammar Learning - Enter your name and team name:\n");
+    printf("Enter Learner's Name: ");
+    char learnerName[MAX_NAME_LENGTH];
+    scanf("%s", learnerName);
+    
+    printf("Enter Team Name: ");
+    char teamName[MAX_NAME_LENGTH];
+    scanf("%s", teamName);
+    
+    // Set baseline values for grammar learning
+    inputBaseLine();
+    
+    // After baseline, simulate the course time and score
+    setCompletionTime(MAX_MEMBERS);
+    
+    evalTeamPerformance();
+}
+
+// Function to set completion time based on number of team members
+void setCompletionTime(int numOfMembers) {
+    int totalTime = 0;
+    for (int i = 0; i < numOfMembers; i++) {
+        printf("Enter the time taken by member %d: ", i + 1);
+        int time;
+        scanf("%d", &time);
+        totalTime += time;
+    }
+}
+
+// Main function
+int main() {
+    srand(time(NULL));  // Initialize random number generator
+    
+    // Simulate member data input
+    for (int i = 0; i < MAX_MEMBERS; i++) {
+        printf("Enter Group Name for Member %d: ", i + 1);
+        scanf("%s", members[i].groupName);
+        printf("Enter Member Name: ");
+        scanf("%s", members[i].memberName);
+        printf("Enter Score for Member %d: ", i + 1);
+        scanf("%d", &members[i].score);
+        printf("Enter Completion Time for Member %d: ", i + 1);
+        scanf("%d", &members[i].courseTime);
+    }
+    
+    // Start the learning process for Hangul or Korean Grammar
+    int choice;
+    printf("\nChoose an option:\n");
+    printf("1. Learn Hangul\n2. Learn Korean Grammar\n");
+    scanf("%d", &choice);
+    
+    if (choice == 1) {
+        learnHangul();
+    } else if (choice == 2) {
+        learnKoreanGrammar();
+    }
+    
+    return 0;
+}
