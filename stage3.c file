@@ -1,0 +1,179 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_MEMBERS 5
+#define MAX_CARDS 20
+#define MAX_NAME_LENGTH 50
+#define MAX_DESCRIPTION_LENGTH 100
+#define NUM_REGIONS 4
+#define DIFFICULTY_LEVELS 3
+
+// Structure to hold a dialect word card
+typedef struct {
+    char dialect[MAX_NAME_LENGTH];
+    char standard[MAX_NAME_LENGTH];
+    int region;  // Region number: 1, 2, 3, or 4
+} DialectCard;
+
+// Structure to store learner achievement data
+typedef struct {
+    char groupName[MAX_NAME_LENGTH];
+    char learnerName[MAX_NAME_LENGTH];
+    int score;
+    char standardAchievement;  // 'A', 'B', 'C', 'F'
+    char dialectAchievement;   // 'A', 'B', 'C', 'F'
+} Achievement;
+
+// Array to store dialect cards
+DialectCard dialectCards[MAX_CARDS];
+
+// Array to store player data
+Achievement achievements[MAX_MEMBERS];
+
+// Function prototypes
+void loadDialectCards();
+void selectRegion();
+void guessStdWord();
+void guessDialectWord();
+void displayAchievement(int score, char *achievement);
+void learnDialect();
+void initializeAchievementLevel();
+
+// Function to load dialect cards from a file
+void loadDialectCards() {
+    FILE *file = fopen("dialectcards.txt", "r");
+    if (file == NULL) {
+        printf("Error opening dialectcards.txt file!\n");
+        exit(1);
+    }
+
+    int index = 0;
+    while (fscanf(file, "%s %s %d", dialectCards[index].dialect, dialectCards[index].standard, &dialectCards[index].region) != EOF) {
+        index++;
+    }
+    fclose(file);
+}
+
+// Function to randomly select a region
+void selectRegion() {
+    int selectedRegion = rand() % NUM_REGIONS + 1;
+    printf("Selected Region: %d\n", selectedRegion);
+}
+
+// Function to simulate "Guess the Standard Language"
+void guessStdWord() {
+    int correctAnswers = 0;
+    srand(time(NULL));
+
+    printf("Guess the Standard Language - 10 questions\n");
+
+    for (int i = 0; i < 10; i++) {
+        int randIndex = rand() % MAX_CARDS;
+        if (dialectCards[randIndex].region == 1 || dialectCards[randIndex].region == 2) {  // Select from two regions
+            printf("Dialect: %s\n", dialectCards[randIndex].dialect);
+            printf("Enter the Standard Word: ");
+            char answer[MAX_NAME_LENGTH];
+            scanf("%s", answer);
+            if (strcmp(answer, dialectCards[randIndex].standard) == 0) {
+                correctAnswers++;
+            }
+        }
+    }
+
+    if (correctAnswers == 10) {
+        printf("You passed the Standard Language Challenge!\n");
+    } else {
+        printf("You failed. Try again!\n");
+    }
+}
+
+// Function to simulate "Guess the Regional Dialect"
+void guessDialectWord() {
+    int correctAnswers = 0;
+    srand(time(NULL));
+
+    printf("Guess the Regional Dialect - 10 questions\n");
+
+    for (int i = 0; i < 10; i++) {
+        int randIndex = rand() % MAX_CARDS;
+        printf("Standard Word: %s\n", dialectCards[randIndex].standard);
+        printf("Enter the Dialect: ");
+        char answer[MAX_NAME_LENGTH];
+        scanf("%s", answer);
+        if (strcmp(answer, dialectCards[randIndex].dialect) == 0) {
+            correctAnswers++;
+        }
+    }
+
+    if (correctAnswers == 10) {
+        printf("You passed the Dialect Challenge!\n");
+    } else {
+        printf("You failed. Try again!\n");
+    }
+}
+
+// Function to display achievement based on score and achievement grade
+void displayAchievement(int score, char *achievement) {
+    printf("Your score: %d\n", score);
+    if (score >= 90) {
+        *achievement = 'A';
+        printf("You are an expert!\n");
+    } else if (score >= 80) {
+        *achievement = 'B';
+        printf("Your skills are excellent!\n");
+    } else if (score >= 70) {
+        *achievement = 'C';
+        printf("You are familiar with it.\n");
+    } else {
+        *achievement = 'F';
+        printf("Study a bit more and try again.\n");
+    }
+}
+
+// Function to initialize achievement level for players
+void initializeAchievementLevel() {
+    for (int i = 0; i < MAX_MEMBERS; i++) {
+        printf("Enter Group Name: ");
+        scanf("%s", achievements[i].groupName);
+        printf("Enter Learner Name: ");
+        scanf("%s", achievements[i].learnerName);
+
+        achievements[i].score = 0;
+        achievements[i].standardAchievement = 'F';
+        achievements[i].dialectAchievement = 'F';
+    }
+}
+
+// Main function for dialect learning
+void learnDialect() {
+    loadDialectCards();  // Load dialect cards
+    initializeAchievementLevel();  // Initialize achievements for all players
+
+    // Prompt user for choosing learning tasks
+    printf("Choose a learning task:\n");
+    printf("1. Guess the Standard Language\n2. Guess the Regional Dialect\n");
+
+    int choice;
+    scanf("%d", &choice);
+
+    if (choice == 1) {
+        guessStdWord();
+    } else if (choice == 2) {
+        guessDialectWord();
+    } else {
+        printf("Invalid choice!\n");
+    }
+
+    // Display results
+    printf("Learning complete! Check your achievement results.\n");
+}
+
+int main() {
+    srand(time(NULL));  // Initialize random number generator
+
+    learnDialect();  // Start the dialect learning game
+
+    return 0;
+}
